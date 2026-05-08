@@ -40,6 +40,8 @@ class StageArtifacts:
     perfect: int = 0
     failed: int = 0
     cost_usd_total: float = 0.0
+    tokens_in: int = 0
+    tokens_out: int = 0
     saved_bndb: bool = False     # False if the bndb-save crashed
     return_code: int = 0
 
@@ -203,6 +205,8 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
         )
         total_in = sum(r.input_tokens for r in results)
         total_out = sum(r.output_tokens for r in results)
+        artifacts.tokens_in = total_in
+        artifacts.tokens_out = total_out
         artifacts.cost_usd_total = round(sum(r.cost_usd for r in results), 4)
 
         from cli import transcript_path as _transcript_for_id

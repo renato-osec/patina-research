@@ -216,7 +216,26 @@ def chain(
                 dst_sc.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src_sc, dst_sc)
             cur_bndb = a.out_bndb
+    _print_totals(artifacts)
     return artifacts
+
+
+def _print_totals(artifacts: list[StageArtifacts]) -> None:
+    """One-line summary across every stage that ran."""
+    if not artifacts:
+        return
+    cost = sum(a.cost_usd_total for a in artifacts)
+    tin = sum(a.tokens_in for a in artifacts)
+    tout = sum(a.tokens_out for a in artifacts)
+    elapsed = sum(a.elapsed_s for a in artifacts)
+    perfect = sum(a.perfect for a in artifacts)
+    targets = sum(a.targets for a in artifacts)
+    parts = [f"{a.name}=${a.cost_usd_total:.3f}" for a in artifacts if a.cost_usd_total]
+    by_stage = (" (" + ", ".join(parts) + ")") if parts else ""
+    print(f"[chain] total: ${cost:.3f}{by_stage}  "
+          f"tokens={tin:,}+{tout:,}  "
+          f"perfect={perfect}/{targets}  elapsed={elapsed:.1f}s",
+          flush=True)
 
 
 def main() -> int:
