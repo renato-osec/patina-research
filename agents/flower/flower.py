@@ -231,12 +231,16 @@ async def sign_function(
     user types can be looked up by name. `submit_rounds` caps how many
     times the harness's PostToolUse validator will bounce a non-perfect
     submission back at the agent for refinement (1 = accept first try)."""
+    # Per-worker fork: writing `shared_ctx.fn_addr = fn_addr` raced
+    # under asyncio - the submit hook would later read whichever addr
+    # the next-scheduled worker stamped, so most recoveries landed in
+    # the wrong sidecar slot (or none at all). `fork` shares bv +
+    # locks + recoveries but gives each call its own fn_addr.
     if shared_ctx is None:
         ctx = TargetCtx(bv=bv, fn_addr=fn_addr)
         owns_ctx = True
     else:
-        ctx = shared_ctx
-        ctx.fn_addr = fn_addr
+        ctx = shared_ctx.fork(fn_addr)
         owns_ctx = False
 
     f = ctx.target_func()
@@ -259,16 +263,19 @@ async def sign_function(
     import consistency
     short = (f.symbol.short_name if f and f.symbol else None) or name
     rust_fn_name = consistency.clean_fn_name(short)
-    def validator(decl: str) -> tuple[bool, str, bool, bool]:
+    def validator(decl: str) -> tuple[bool, str, bool, bool, float]:
         # `decl` here IS the full Rust source the agent submitted.
         full = "\n".join(p for p in (prelude or "", decl) if p).strip()
         try:
             r = consistency.check(full, bv=bv, fn_addr=fn_addr,
                                   rust_fn_name=rust_fn_name)
         except Exception as e:
-            return False, f"check_reconstruction raised {type(e).__name__}: {e}", False, False
+            return False, f"check_reconstruction raised {type(e).__name__}: {e}", False, False, 0.0
         # Flower has no arity-trap analogue; pass False unconditionally.
-        return r.perfect, r.feedback, r.has_warnings, False
+        # Score: 1.0 perfect, 0.0 otherwise (consistency.CheckResult
+        # only exposes a binary perfect bit; partial-credit scoring
+        # could be added later).
+        return r.perfect, r.feedback, r.has_warnings, False, (1.0 if r.perfect else 0.0)
 
     # Pre-dump full asm + HLIL so the submit hook can hand them to the
     # agent post-first-submit (forced ground-truth context). Best-effort:
@@ -286,7 +293,11 @@ async def sign_function(
     # code edits): set SIGNER_NO_FORCE_ITERATE=1 to disable the
     # force-iterate-first-submit bounce; SIGNER_NO_GATE=1 to skip the
     # PreToolUse wide-tool gate entirely.
-    no_force_iter = os.environ.get("SIGNER_NO_FORCE_ITERATE") == "1"
+    # Default OFF: force-iterate-first doubled cost on every successful
+    # run (every [OK] paid for 2 submits). Set
+    # `SIGNER_FORCE_ITERATE_FIRST=1` to opt back in.
+    no_force_iter = (os.environ.get("SIGNER_NO_FORCE_ITERATE") == "1"
+                     or os.environ.get("SIGNER_FORCE_ITERATE_FIRST") != "1")
     no_gate = os.environ.get("SIGNER_NO_GATE") == "1"
 
     submit_tools, captured, submit_hook = t_submit.make(
@@ -454,6 +465,8 @@ async def sign_function(
         hooks=hooks,
         model=model,
         max_turns=max_turns,
+        # Per-fn token budget. OFF by default - see signer.py.
+        task_budget_tokens=int(os.environ.get("PATINA_TASK_BUDGET", "0")),
         agents={"context": context_subagent, "destructor": destructor_subagent},
     )._build_options(env=CLI_ENV_SCRUB)
 

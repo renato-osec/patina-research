@@ -21,7 +21,12 @@ from claude_agent_sdk import tool, HookMatcher
 #                 agent, since the SYSTEM tells them to keep the larger
 #                 sig and asking to "refine" would push them to drop
 #                 the real arg.
-Validator = Callable[[str], tuple[bool, str, bool, bool]]
+Validator = Callable[[str], tuple[bool, str, bool, bool, float]]
+# score in [0, 1]: 1.0 = perfect, lower = partial. Used by the
+# accept-on-max-rounds branch to gate the bv-side apply on quality
+# (Bug 4: prior runs accepted score=0.67/0.80 partial recoveries
+# even at max_rounds, polluting downstream stages with bad types).
+APPLY_SCORE_THRESHOLD = 0.85
 
 
 def make(
@@ -107,6 +112,28 @@ def make(
         """
         if apply_ctx is None or not sig.strip():
             return "skip: no apply_ctx" if apply_ctx is None else "skip: empty sig"
+        # Persist to the cross-stage sidecar UNCONDITIONALLY now that we
+        # have a validated Rust sig. Downstream stages (flower) only
+        # need the Rust signature, not the C-side bv mutation; gating
+        # this write on the bv apply (nacre's c_signature, parse_type_
+        # string, fn.type=...) used to drop ~50% of recoveries because
+        # nacre fails to emit C for stdlib types like `Box<[u8]>` and
+        # `&str -> String`.
+        if apply_ctx.recoveries is not None:
+            try:
+                fn_now = apply_ctx.target_func()
+                cur_name = fn_now.name if fn_now else ""
+                apply_ctx.recoveries.update(
+                    apply_ctx.fn_addr, "signer",
+                    rust_types=types,
+                    rust_signature=sig,
+                    name=agent_name or cur_name,
+                )
+            except Exception as e:
+                # Don't let a sidecar hiccup mask the bv-apply outcome.
+                print(f"[signer] recoveries.update failed @ "
+                      f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
+                      flush=True)
         try:
             import nacre  # heavy first-import (rustc driver); cached after
         except Exception as e:
@@ -155,16 +182,7 @@ def make(
                     fn.reanalyze(bn.FunctionUpdateType.UserFunctionUpdate)
             except Exception as e:
                 return f"err: apply: {type(e).__name__}: {e}"
-        # Mirror to the cross-stage sidecar so flower (and any future
-        # stage) can read this fn's recovered prototype + types
-        # without re-parsing the bndb.
-        if apply_ctx.recoveries is not None:
-            apply_ctx.recoveries.update(
-                apply_ctx.fn_addr, "signer",
-                rust_types=types,
-                rust_signature=sig,
-                name=agent_name or fn.name,
-            )
+        # Sidecar already written before nacre/bv mutations.
         return f"ok: proto + {len(defined)} type(s){renamed}"
 
     def _post_first_blurb() -> str:
@@ -204,13 +222,14 @@ def make(
         agent_name = (inp.get("name") or "").strip()
         decl = f"{types}\n\n{sig}" if types else sig
         try:
-            perfect, feedback, has_warnings, arity_only = validator(decl)
+            perfect, feedback, has_warnings, arity_only, score = validator(decl)
         except Exception as e:
-            perfect, feedback, has_warnings, arity_only = (
+            perfect, feedback, has_warnings, arity_only, score = (
                 False,
                 f"validator failed: {type(e).__name__}: {e}",
                 False,
                 False,
+                0.0,
             )
 
         captured["attempts"] += 1
@@ -224,7 +243,12 @@ def make(
         if has_warnings:
             if attempt >= max_rounds:
                 captured["exhausted"] = True
-                captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+                if score >= APPLY_SCORE_THRESHOLD:
+                    captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+                else:
+                    captured["applied"] = (
+                        f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                    )
                 return {
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
@@ -285,9 +309,13 @@ def make(
             # arg regs (typical for a `bool`/`u8` whose use the optimizer
             # folded into one instruction). The SYSTEM tells the agent to
             # keep the larger sig; bouncing here would push them to drop a
-            # real arg. Accept as final and let final_perfect=False
-            # surface the discrepancy honestly in the JSON.
-            captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+            # real arg. Accept as final iff score >= threshold.
+            if score >= APPLY_SCORE_THRESHOLD:
+                captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+            else:
+                captured["applied"] = (
+                    f"reject: arity-only score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                )
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",
@@ -301,10 +329,18 @@ def make(
                 }
             }
         if attempt >= max_rounds:
-            # Out of rounds: accept the last submission as-is, but tag the
-            # captured state so the harness can record `budget_exhausted`.
+            # Out of rounds: only commit to the bv + sidecar if the
+            # final submission cleared the quality threshold. Below
+            # APPLY_SCORE_THRESHOLD we mark the run as failed and skip
+            # the apply - the bv keeps its existing types (better than
+            # a wrong recovery downstream).
             captured["exhausted"] = True
-            captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+            if score >= APPLY_SCORE_THRESHOLD:
+                captured["applied"] = await _apply_to_bv(types, sig, agent_name)
+            else:
+                captured["applied"] = (
+                    f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                )
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",

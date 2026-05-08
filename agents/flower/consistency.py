@@ -25,6 +25,57 @@ def clean_fn_name(symbol_short_name: str) -> str:
     return s or symbol_short_name
 
 
+_ALLOW_WHITELIST = {"dead_code"}
+
+
+def _bad_inner_allow(source: str) -> list[str]:
+    """Return the list of `#![allow(<lint>)]` lints used at the file
+    level that aren't in the whitelist. Empty list = clean."""
+    import re
+    bad: list[str] = []
+    for m in re.finditer(r"#!\[allow\(([^)]+)\)\]", source):
+        for lint in m.group(1).split(","):
+            lint = lint.strip()
+            if lint and lint not in _ALLOW_WHITELIST:
+                bad.append(lint)
+    return bad
+
+
+def _is_trivial_body(rust_source: str, rust_fn_name: str,
+                    bin_block_count: int) -> tuple[bool, str]:
+    """Detect Bug 6: agent submitted a stub body (`let _ = (...)` or
+    similar single-stmt no-op) for a binary fn that's clearly non-
+    trivial. Heuristic: extract fn body, count meaningful (non-blank,
+    non-comment) lines; if <= 2 and binary has > 4 basic blocks,
+    flag it."""
+    import re
+    # Match the named fn body.
+    m = re.search(r"\bfn\s+" + re.escape(rust_fn_name)
+                  + r"\s*[^{]*\{(.*)\}", rust_source, re.DOTALL)
+    if not m:
+        return False, ""
+    body = m.group(1).strip()
+    # Strip leading/trailing braces if multi-stmt blocks crept in.
+    # Count meaningful statements: split by `;` and `{`/`}` (rough).
+    # If body collapses to "let _ = (...)" plus optional return, it's a stub.
+    stmts = [s.strip() for s in body.split(";") if s.strip()]
+    stmts = [s for s in stmts if not s.startswith("//")]
+    is_let_underscore_stub = all(
+        s.startswith("let _") or s in ("()", "0", "")
+        for s in stmts
+    ) if stmts else True
+    if not is_let_underscore_stub or bin_block_count <= 4:
+        return False, ""
+    meaningful = stmts
+    return True, (
+        f"submission rejected: fn body has only {len(meaningful)} "
+        f"meaningful line(s) but the binary has {bin_block_count} "
+        f"basic blocks. A stub like `let _ = (...)` papers over the "
+        f"actual logic - dataflow trivially passes when there's no "
+        f"flow. Reconstruct the real body."
+    )
+
+
 @dataclass
 class CheckResult:
     perfect: bool
@@ -50,6 +101,19 @@ def check(
     named after an HLIL var (`arg1`, `var_28`, etc.) so the mapping
     `rust_name -> il_name` is the identity intersection.
     """
+    # 0a. Bug 5: reject `#![allow(...)]` attribute spam unless it's
+    # only `dead_code` (the one allow that's legitimately useful in
+    # signature-only stubs). Agents were silencing every warning as
+    # a workaround instead of fixing the underlying issue.
+    bad = _bad_inner_allow(rust_source)
+    if bad:
+        return CheckResult(False, (
+            f"submission rejected: `#![allow({', '.join(bad)})]` papers "
+            f"over warnings instead of fixing them. Only `dead_code` is "
+            f"permitted at the inner-attribute level. Remove the allow "
+            f"and address the underlying warning (rename unused vars "
+            f"with leading `_`, drop the unused mut, etc)."
+        ), False)
     # 1. Compile via lymph; with_compiler_errors captures rustc stderr
     #    and appends it to the exception so the agent sees real
     #    diagnostics instead of "rustc driver aborted".
@@ -71,6 +135,17 @@ def check(
 
     # 2. Lower the binary fn (worst-case at calls; depth=0).
     anem = anemone.analyze(bv, fn_addr)
+
+    # 2a. Bug 6: reject trivial-body submissions for non-trivial fns.
+    # `let _ = (...)` stubs trivially pass dataflow (no flow to compare)
+    # but contribute nothing.
+    f = bv.get_function_at(fn_addr) or next(
+        iter(bv.get_functions_containing(fn_addr) or []), None,
+    )
+    bb_count = len(list(f.basic_blocks)) if f else 0
+    is_stub, stub_msg = _is_trivial_body(rust_source, rust_fn_name, bb_count)
+    if is_stub:
+        return CheckResult(False, stub_msg, False)
 
     # 3. Map by name. anemone uses SSA-versioned slot names (`s#0`,
     #    `var_28#1`); strip the version suffix. Skip lymph-internal:

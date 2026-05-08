@@ -30,6 +30,12 @@ class Agent:
     # builtin. Maps name -> AgentDefinition. Whitelist "Task" or
     # "Agent" in `allowed_builtins` to expose the spawn capability.
     agents: dict[str, AgentDefinition] = field(default_factory=dict)
+    # API-side total-token budget. The model is told its remaining
+    # budget mid-run so it paces tool use and wraps up before the
+    # limit. Caps run-away iter-cap-exhaust runs (the model rambling
+    # to 50k+ output tokens after hitting max_turns crashed the SDK
+    # CLI subprocess). 0 = unset.
+    task_budget_tokens: int = 0
 
     def _build_options(self, **overrides) -> ClaudeAgentOptions:
         mcp_servers = {}
@@ -40,6 +46,8 @@ class Agent:
             # custom tools are addressed as mcp__<server>__<tool>
             allowed += [f"mcp__{self.name}__{t.name}" for t in self.tools]
 
+        budget = overrides.pop("task_budget_tokens", self.task_budget_tokens)
+        task_budget = {"total": int(budget)} if budget else None
         return ClaudeAgentOptions(
             system_prompt=self.system_prompt,
             allowed_tools=allowed,
@@ -52,6 +60,7 @@ class Agent:
             setting_sources=[],
             skills=[],
             agents=self.agents or None,
+            task_budget=task_budget,
             **overrides,
         )
 

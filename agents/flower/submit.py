@@ -21,7 +21,8 @@ from claude_agent_sdk import tool, HookMatcher
 #                 agent, since the SYSTEM tells them to keep the larger
 #                 sig and asking to "refine" would push them to drop
 #                 the real arg.
-Validator = Callable[[str], tuple[bool, str, bool, bool]]
+Validator = Callable[[str], tuple[bool, str, bool, bool, float]]
+APPLY_SCORE_THRESHOLD = 0.85
 
 
 def _signer_sig(recoveries, fn_addr: int) -> str | None:
@@ -131,6 +132,20 @@ def make(
         renamed = ""
         if agent_name and agent_name != fn.name:
             renamed = f" (renamed: {fn.name!r} -> {agent_name!r})"
+        # Persist to the sidecar BEFORE the bv mutation so a transaction
+        # failure doesn't drop the durable record. Sidecar is the
+        # canonical store; bv comment is best-effort.
+        if apply_ctx.recoveries is not None:
+            try:
+                apply_ctx.recoveries.update(
+                    apply_ctx.fn_addr, "flower",
+                    source=source,
+                    name=agent_name or fn.name,
+                )
+            except Exception as e:
+                print(f"[flower] recoveries.update failed @ "
+                      f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
+                      flush=True)
         async with apply_ctx.write_lock:
             try:
                 with bv.undoable_transaction():
@@ -139,16 +154,6 @@ def make(
                     fn.comment = source
             except Exception as e:
                 return f"err: apply: {type(e).__name__}: {e}"
-        # Mirror into the cross-stage sidecar (best-effort - flower's
-        # canonical store is fn.comment, the sidecar is a queryable
-        # secondary view). Future stages read this without needing
-        # binja loaded.
-        if apply_ctx.recoveries is not None:
-            apply_ctx.recoveries.update(
-                apply_ctx.fn_addr, "flower",
-                source=source,
-                name=agent_name or fn.name,
-            )
         return f"ok: comment ({len(source)}B){renamed}"
 
     def _post_first_blurb() -> str:
@@ -188,13 +193,14 @@ def make(
         rationale = (inp.get("rationale") or "").strip()
         decl = source   # validator gets full source verbatim
         try:
-            perfect, feedback, has_warnings, arity_only = validator(decl)
+            perfect, feedback, has_warnings, arity_only, score = validator(decl)
         except Exception as e:
-            perfect, feedback, has_warnings, arity_only = (
+            perfect, feedback, has_warnings, arity_only, score = (
                 False,
                 f"validator failed: {type(e).__name__}: {e}",
                 False,
                 False,
+                0.0,
             )
 
         captured["attempts"] += 1
@@ -243,7 +249,12 @@ def make(
         if has_warnings:
             if attempt >= max_rounds:
                 captured["exhausted"] = True
-                captured["applied"] = await _apply_to_bv(source, agent_name)
+                if score >= APPLY_SCORE_THRESHOLD:
+                    captured["applied"] = await _apply_to_bv(source, agent_name)
+                else:
+                    captured["applied"] = (
+                        f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                    )
                 return {
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
@@ -323,10 +334,18 @@ def make(
                 }
             }
         if attempt >= max_rounds:
-            # Out of rounds: accept the last submission as-is, but tag the
-            # captured state so the harness can record `budget_exhausted`.
+            # Out of rounds: only commit to the bv + sidecar if score
+            # cleared the threshold. Below it we keep the bv clean and
+            # mark exhausted so the run shows up as failed (better than
+            # leaving a wrong reconstruction downstream stages will
+            # treat as authoritative).
             captured["exhausted"] = True
-            captured["applied"] = await _apply_to_bv(source, agent_name)
+            if score >= APPLY_SCORE_THRESHOLD:
+                captured["applied"] = await _apply_to_bv(source, agent_name)
+            else:
+                captured["applied"] = (
+                    f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                )
             return {
                 "hookSpecificOutput": {
                     "hookEventName": "PostToolUse",
