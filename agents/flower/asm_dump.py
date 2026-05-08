@@ -12,6 +12,9 @@ from pathlib import Path
 
 
 _DUMP_DIR_ENV = "PATINA_SIGNER_ASM_DIR"
+# Subdir name kept neutral so the path the agent reads back via Bash
+# doesn't leak the project name into its narrative.
+_DUMP_SUBDIR = "stage_asm"
 
 
 def _safe_name(name: str, addr: int) -> str:
@@ -29,7 +32,7 @@ def dump_function_asm(bv, fn_addr: int, *, name: str | None = None) -> Path:
     f = funcs[0] if funcs else None
     if f is None:
         raise ValueError(f"no function at {fn_addr:#x}")
-    out_dir = Path(os.environ.get(_DUMP_DIR_ENV, tempfile.gettempdir())) / "patina_signer"
+    out_dir = Path(os.environ.get(_DUMP_DIR_ENV, tempfile.gettempdir())) / _DUMP_SUBDIR
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{_safe_name(name or f.name, fn_addr)}.asm"
 

@@ -1,10 +1,20 @@
 import asyncio
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Callable
 from claude_agent_sdk import (
     query, ClaudeAgentOptions, tool, create_sdk_mcp_server,
     HookMatcher, AgentDefinition,
 )
+
+
+# Neutral cwd for the spawned Claude CLI. Default to the process cwd
+# leaks the project name ("patina") into the agent's working-directory
+# context, and the model rationalises any unfamiliar binary as part of
+# that project (e.g. labels a Hangul fn as "Patina-project romanization").
+# Use a freshly-mkdtemp'd dir with a generic prefix so no project string
+# ends up in the path the agent sees.
+_NEUTRAL_CWD = tempfile.mkdtemp(prefix="agent-")
 
 @dataclass
 class Agent:
@@ -37,7 +47,7 @@ class Agent:
             hooks=self.hooks,
             model=self.model,
             max_turns=self.max_turns,
-            cwd=overrides.pop("cwd", self.cwd),
+            cwd=overrides.pop("cwd", self.cwd) or _NEUTRAL_CWD,
             permission_mode="bypassPermissions",
             setting_sources=[],
             skills=[],
