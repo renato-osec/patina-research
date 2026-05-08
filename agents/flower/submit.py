@@ -24,6 +24,32 @@ from claude_agent_sdk import tool, HookMatcher
 Validator = Callable[[str], tuple[bool, str, bool, bool]]
 
 
+def _signer_sig(recoveries, fn_addr: int) -> str | None:
+    """Read signer's recovered Rust signature for `fn_addr` from the
+    cross-stage sidecar, or None if absent."""
+    try:
+        entry = recoveries.get(fn_addr) or {}
+    except Exception:
+        return None
+    sig = (entry.get("signer") or {}).get("rust_signature")
+    return sig.strip() if isinstance(sig, str) and sig.strip() else None
+
+
+def _fn_sig_shape(source: str) -> tuple[str, int] | None:
+    """Extract (fn_name, arity) from the first `fn <name>(...)` decl
+    in `source`. Used to compare flower's submission against signer's
+    approved signature without false positives on whitespace/types."""
+    import re
+    m = re.search(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)",
+                  source, re.DOTALL)
+    if not m:
+        return None
+    name = m.group(1)
+    raw = m.group(2).strip()
+    arity = 0 if not raw else sum(1 for p in raw.split(",") if p.strip())
+    return (name, arity)
+
+
 def make(
     *,
     validator: Validator | None = None,
@@ -58,6 +84,7 @@ def make(
         "exhausted": False,  # set True if max_rounds was hit without a perfect submit
         "scolded": False,    # True once we've sent the free antipattern warning
         "applied": "",       # status of the post-accept bndb write-back (apply_ctx)
+        "signer_bounced": False,  # we bounced once for diverging from signer's sig
     }
 
     @tool("submit_reconstruction",
@@ -158,6 +185,7 @@ def make(
         inp = input_data.get("tool_input") or {}
         source = (inp.get("source") or "").strip()
         agent_name = (inp.get("name") or "").strip()
+        rationale = (inp.get("rationale") or "").strip()
         decl = source   # validator gets full source verbatim
         try:
             perfect, feedback, has_warnings, arity_only = validator(decl)
@@ -172,6 +200,41 @@ def make(
         captured["attempts"] += 1
         attempt = captured["attempts"]
         captured["validations"].append((decl, perfect, feedback))
+
+        # Signer-sig enforcement: on attempt 1, if signer recovered a
+        # signature for this fn and the agent's submission diverges
+        # (different fn name or arity), bounce ONCE with signer's exact
+        # sig quoted. Override path: prefix `rationale` with
+        # `signer-override:<reason>` to skip the check (used when signer
+        # got the sig wrong and the agent has reason to correct).
+        if (attempt == 1
+                and not captured["signer_bounced"]
+                and apply_ctx is not None
+                and apply_ctx.recoveries is not None
+                and not rationale.lower().startswith("signer-override:")):
+            signer_sig = _signer_sig(apply_ctx.recoveries, apply_ctx.fn_addr)
+            if signer_sig:
+                submitted = _fn_sig_shape(source)
+                approved = _fn_sig_shape(signer_sig)
+                if submitted and approved and submitted != approved:
+                    captured["signer_bounced"] = True
+                    return {
+                        "decision": "block",
+                        "reason": (
+                            f"Submission REJECTED (attempt 1/{max_rounds}) "
+                            f"- your fn signature diverges from the "
+                            f"approved signer-stage signature.\n\n"
+                            f"  Yours:  fn {submitted[0]}({submitted[1]} args)\n"
+                            f"  Signer: fn {approved[0]}({approved[1]} args)\n\n"
+                            f"Signer's approved signature (use verbatim):\n"
+                            f"```rust\n{signer_sig.strip()}\n```\n\n"
+                            f"Re-submit with signer's signature unless you "
+                            f"have evidence it's wrong (e.g. rustc rejected "
+                            f"it, or HLIL contradicts the param types). To "
+                            f"override, prefix `rationale` with "
+                            f"`signer-override:<one-line reason>`."
+                        ),
+                    }
 
         # Cheese / offset-named-fields warnings count as REJECTION now
         # (no free pass). Layout matched but the struct papers over real
@@ -217,7 +280,10 @@ def make(
         # just to unlock the wide-tool gate. Bounce the FIRST submit even
         # when it validates clean, with a "now refine if you can" prompt;
         # the second submit either confirms or improves it.
-        if force_iterate_first and perfect and attempt == 1 and not arity_only:
+        # Skip when we already burned attempt 1 on a signer-sig bounce.
+        if (force_iterate_first and perfect and attempt == 1
+                and not arity_only
+                and not captured["signer_bounced"]):
             return {
                 "decision": "block",
                 "reason": (
