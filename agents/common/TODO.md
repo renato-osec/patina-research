@@ -1,0 +1,3 @@
+- typo : use the work at /home/renny/doc/work/research/patina/rustlayout as a hook to get accurate type recovery from rust binaries
+- flower : control flow hook + binja mcp through the backend api
+- folder : loop invariant folding with z3?

@@ -1,0 +1,12 @@
+[toolchain]
+# Pinned to the nightly closest to the rustc 1.83.0 stable release
+# (2024-11-26). Several crates here use `rustc_private` to inspect the
+# *exact* layout / type info of binaries built with rustc 1.83 (the
+# benchmarks under benchmark_183/) — Vec/HashMap/RawVec internals shift
+# between releases (e.g. `raw_vec::Cap` became a `UsizeNoHighBit` alias
+# in 1.95) and our reconstructions only line up byte-for-byte when the
+# host compiler matches the target binary's stdlib. Components cover
+# every consumer in the workspace: rustc-dev for rustc_private, rust-src
+# for stdlib lookups, llvm-tools-preview for codegen utilities.
+channel = "nightly-2024-12-07"
+components = ["rustc-dev", "llvm-tools-preview", "rust-src", "rustfmt", "clippy"]

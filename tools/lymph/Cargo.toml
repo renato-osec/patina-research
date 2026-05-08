@@ -1,0 +1,23 @@
+[package]
+name = "lymph"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "lymph"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "lymph"
+path = "src/main.rs"
+
+[features]
+default = []
+python = ["dep:pyo3"]
+
+[dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"], optional = true }
+
+[dev-dependencies]
+indoc = "2"

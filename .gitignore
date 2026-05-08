@@ -1,0 +1,44 @@
+target/
+trash/
+Cargo.lock.bak
+**/target/
+/tmp*
+*.bndb
+rust-samples/abstract_il/programs-test/target/
+rust-samples/abstract_il/programs-test/*/target/
+# sub-repos manage their own history
+roe/.git/
+exoskeleton/.git/
+chela/.git/
+rustlayout/.git/
+rustlayout-clean/.git/
+
+# agent scratch venvs (incl. recompiler's pinned-rustc venv-nightly-*)
+*venv*/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# agent run artifacts (logs, JSON summaries, marinated bndbs)
+agents/*/outputs/
+agents/common/outputs/
+outputs/
+
+# editor / OS junk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# sub-repos track their own history
+chela/
+exoskeleton/
+roe/
+rustlayout/
+rustlayout-clean/
+rust-samples/
+
+# Per-host private envrc (BINJA_PATH, nix discovery, …)
+.envrc.local
+agents/common/.envrc.local

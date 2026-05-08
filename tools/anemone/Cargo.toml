@@ -1,0 +1,22 @@
+[package]
+name = "anemone"
+version = "0.1.0"
+edition = "2021"
+description = "Binary-side dataflow verifier (MLIL-SSA -> per-slot flow graph). Counterpart of lymph."
+
+[lib]
+name = "anemone"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "anemone"
+path = "src/main.rs"
+
+[features]
+python = ["dep:pyo3"]
+
+[dependencies]
+binaryninja = { path = "/home/renny/doc/rust/binja-api/rust" }
+binaryninjacore-sys = { path = "/home/renny/doc/rust/binja-api/rust/binaryninjacore-sys" }
+pyo3 = { version = "0.24", features = ["extension-module"], optional = true }

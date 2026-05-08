@@ -1,0 +1,19 @@
+[package]
+name = "carpace"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "carpace"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[features]
+default = []
+python = ["dep:pyo3"]
+
+[dependencies]
+chela = { path = "../chela" }
+nacre = { path = "../nacre" }
+pyo3 = { version = "0.24", features = ["extension-module"], optional = true }
+thiserror = "2"

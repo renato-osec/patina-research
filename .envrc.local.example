@@ -1,0 +1,52 @@
+# Copy to `.envrc.local` and edit for the host. This file is the template;
+# `.envrc.local` itself is gitignored.
+#
+# Two flavors of host appear in practice:
+#   - NixOS / nix-shell: needs explicit nix-store paths so cargo, rustc, and
+#     binaryninja can find libstdc++ / libclang / openssl.
+#   - Stock Linux (Arch, Debian, …): usually nothing here at all. BINJA_PATH
+#     is the only knob most boxes need.
+
+# ---------------------------------------------------------------------------
+# 1. Where Binary Ninja lives. Used to find libbinaryninjacore.so.1.
+# ---------------------------------------------------------------------------
+# export BINJA_PATH="$HOME/down/binja/binaryninja-commerical/binaryninja"
+
+# ---------------------------------------------------------------------------
+# 2. NixOS-only: dynamic discovery of compiler libs the build needs at runtime.
+#    Skip this whole block on stock Linux distros.
+# ---------------------------------------------------------------------------
+# if [ -d /nix/store ]; then
+#     export GLIBC_TUNABLES=glibc.rtld.optional_static_tls=2000000
+#
+#     # libstdc++ from the nix gcc lib derivation
+#     LIBSTDCPP_DIR=$(ls -d /nix/store/*-gcc-*-lib/lib 2>/dev/null | head -1)
+#     export LD_LIBRARY_PATH="${LIBSTDCPP_DIR:+$LIBSTDCPP_DIR:}${BINJA_PATH:+$BINJA_PATH:}${LD_LIBRARY_PATH:-}"
+#     unset LIBSTDCPP_DIR
+#
+#     # libclang for `bindgen`
+#     if [ -z "${LIBCLANG_PATH:-}" ]; then
+#         LIBCLANG_PATH=$(ls -d /nix/store/*-clang*/lib 2>/dev/null | head -1)
+#         [ -n "$LIBCLANG_PATH" ] && export LIBCLANG_PATH
+#     fi
+#
+#     # openssl-sys auto-config
+#     if [ -z "${OPENSSL_DIR:-}" ]; then
+#         OPENSSL_DEV=$(ls -d /nix/store/*-openssl-*-dev 2>/dev/null | head -1)
+#         if [ -n "$OPENSSL_DEV" ]; then
+#             OPENSSL_LIB=$(cat "$OPENSSL_DEV/nix-support/propagated-build-inputs" 2>/dev/null \
+#                 | tr ' ' '\n' | grep -E "openssl-[0-9.]+$" | head -1)
+#             if [ -n "$OPENSSL_LIB" ] && [ -d "$OPENSSL_LIB/lib" ]; then
+#                 export OPENSSL_INCLUDE_DIR="$OPENSSL_DEV/include"
+#                 export OPENSSL_LIB_DIR="$OPENSSL_LIB/lib"
+#                 export PKG_CONFIG_PATH="$OPENSSL_DEV/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+#             fi
+#         fi
+#         unset OPENSSL_DEV OPENSSL_LIB
+#     fi
+# fi
+
+# ---------------------------------------------------------------------------
+# 3. Stock Linux: just put binja on the loader path. Stop here.
+# ---------------------------------------------------------------------------
+# export LD_LIBRARY_PATH="${BINJA_PATH:+$BINJA_PATH:}${LD_LIBRARY_PATH:-}"

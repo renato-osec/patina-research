@@ -1,0 +1,32 @@
+# Unified workspace. Tools live under tools/:
+#   tools/exoskeleton  - binja LLIL -> offset traces
+#   tools/chela        - ELF -> rustc/llvm + linked crate metadata
+#   tools/carpace      - crate source fetch + public-type extraction
+#   tools/lymph        - Rust-source dataflow verifier (MIR -> per-slot flow graph)
+#   tools/anemone      - Binary-side dataflow verifier (MLIL-SSA -> flow graph)
+#   tools/nacre        - rustc-driven layout / signature query (pyo3 cdylib)
+#   utils/type_freq    - syn-based AST visitor counting Rust types in type
+#                        position; builds usage-frequency priors.
+
+[workspace]
+resolver = "2"
+members = [
+  "tools/chela",
+  "tools/carpace",
+  "utils/type_freq",
+  "bench/benchmark_stripped/2020-toobz/sos",
+]
+# exoskeleton + anemone need binja-api (LIBCLANG_PATH + BINJA_PATH) so
+# plain `cargo build --workspace` would break without those env vars;
+# they stay out of the default workspace and are built standalone.
+# nacre + lymph pin their own nightly toolchain (rustc_private), so they
+# can't share the workspace target dir.
+exclude = [
+  "tools/exoskeleton",
+  "tools/anemone",
+  "tools/nacre",
+  "tools/lymph",
+  "rust-samples",
+  "utils/differ",
+  "trash",
+]

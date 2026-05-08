@@ -1,0 +1,16 @@
+[project]
+name = "lymph"
+version = "0.1.0"
+description = "Rust-source MIR dataflow extraction via rustc_private"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+features = ["pyo3/extension-module", "python"]
+module-name = "lymph"
+# Stay dynamically linked — bundling librustc_driver into the wheel would
+# create duplicate global state and conflict with the running rustc toolchain.
+skip-auditwheel = true

@@ -1,0 +1,40 @@
+# Copy to `agents/common/.envrc.local` and edit per-host. Gitignored.
+#
+# This file is for stuff agents/common needs that is host-specific:
+#   - LIBSTDCPP / LIBRUSTC_DRIVER → constructed into LD_PRELOAD so nacre's
+#     pyo3 module loads librustc_driver-*.so and a recent libstdc++.so.6
+#     at process start (otherwise the rustc driver aborts on NixOS).
+#   - LIBCLANG_PATH for the bindgen step in exoskeleton.
+#   - GLIBC_TUNABLES for nix's static-TLS knob.
+#
+# Stock Linux usually needs *nothing* here. Keep this file empty (or
+# touch -- the parent .envrc handles defaults) and skip ahead.
+
+# ---------------------------------------------------------------------------
+# NixOS: discover compiler libs from /nix/store. Skip outright on other hosts.
+# ---------------------------------------------------------------------------
+# if [ -d /nix/store ] && grep -q "^ID=nixos" /etc/os-release 2>/dev/null; then
+#     export GLIBC_TUNABLES=glibc.rtld.optional_static_tls=2000000
+#
+#     # Most-recent native libstdc++ from any nix gcc lib derivation.
+#     # NB: the unfiltered glob `/nix/store/*-gcc-*-lib/lib/libstdc++.so.6`
+#     # can match aarch64-cross builds if you've ever pulled them in. Filter
+#     # explicitly to native arch.
+#     LIBSTDCPP=$(ls -1 /nix/store/*-gcc-*-lib/lib/libstdc++.so.6 2>/dev/null \
+#         | grep -v -- '-aarch64-' | grep -v -- '-arm-' | head -1)
+#
+#     LIBRUSTC_DRIVER=$(ls "$RUSTC_SYSROOT"/lib/librustc_driver-*.so 2>/dev/null | head -1)
+#
+#     if [ -n "$LIBSTDCPP" ] && [ -n "$LIBRUSTC_DRIVER" ]; then
+#         export LIBSTDCPP LIBRUSTC_DRIVER
+#         export LD_PRELOAD="$LIBSTDCPP $LIBRUSTC_DRIVER${LD_PRELOAD:+ $LD_PRELOAD}"
+#         LIBSTDCPP_DIR="$(dirname "$LIBSTDCPP")"
+#         export LD_LIBRARY_PATH="$LIBSTDCPP_DIR:$BINJA_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+#         unset LIBSTDCPP_DIR
+#     fi
+#
+#     if [ -z "${LIBCLANG_PATH:-}" ]; then
+#         LIBCLANG_PATH=$(ls -d /nix/store/*-clang*/lib 2>/dev/null | head -1)
+#         [ -n "$LIBCLANG_PATH" ] && export LIBCLANG_PATH
+#     fi
+# fi

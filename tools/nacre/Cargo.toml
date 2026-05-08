@@ -1,0 +1,15 @@
+[package]
+name = "nacre"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "nacre"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "nacre"
+path = "src/main.rs"
+
+[dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"] }

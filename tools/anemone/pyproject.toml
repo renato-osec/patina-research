@@ -1,0 +1,17 @@
+[project]
+name = "anemone"
+version = "0.1.0"
+description = "Binary-side dataflow verifier (MLIL-SSA -> per-slot flow graph). Counterpart of lymph."
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+features = ["pyo3/extension-module", "python"]
+module-name = "anemone"
+# Stay dynamically linked against the system libbinaryninjacore.so.1 — a
+# bundled copy would have its own global state and segfault on BV handles
+# created by the python `binaryninja` module's lib instance.
+skip-auditwheel = true

@@ -1,0 +1,14 @@
+{
+  "0x408720": {
+    "flower": {
+      "name": "hash_one",
+      "source": "use std::hash::{BuildHasher, Hasher};\n\n#[repr(C)]\npub struct RandomState {\n    k0: u64,\n    k1: u64,\n}\n\nimpl BuildHasher for RandomState {\n    type Hasher = std::collections::hash_map::DefaultHasher;\n    fn build_hasher(&self) -> Self::Hasher { unimplemented!() }\n}\n\nimpl RandomState {\n    fn hash_one(&self, x: &usize) -> u64 {\n        let _ = self;\n        let mut rax: std::collections::hash_map::DefaultHasher = std::collections::hash_map::DefaultHasher::new();\n        rax.write_usize(*x);\n        rax.finish()\n    }\n}"
+    }
+  },
+  "0x4088b0": {
+    "flower": {
+      "name": "jump",
+      "source": "use std::collections::HashMap;\n\npub struct State {\n    pub jt: HashMap<usize, usize>,\n    pub tc: bool,\n}\n\nimpl State {\n    fn jump(&self, i: usize, fwd: bool) -> usize {\n        if self.tc == fwd {\n            return i;\n        }\n        *self.jt.get(&i).expect(\"no entry found for key\")\n    }\n}"
+    }
+  }
+}

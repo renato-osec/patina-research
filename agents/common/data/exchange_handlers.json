@@ -1,0 +1,159 @@
+{
+  "binary": "/home/renny/hl-node.bndb",
+  "marker_offsets": [
+    "0x9c0",
+    "0x10c0",
+    "0x1398"
+  ],
+  "scan_method": "LLIL text grep for `[reg + marker]` across all functions",
+  "candidates": [
+    {
+      "addr": "0x555555d906d0",
+      "name": "sub_555555d906d0",
+      "regs_with_marker_offsets": [
+        "rbx"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555555f59420",
+      "name": "sub_555555f59420",
+      "regs_with_marker_offsets": [
+        "rbx"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555556261e60",
+      "name": "sub_555556261e60",
+      "regs_with_marker_offsets": [
+        "rsi"
+      ],
+      "is_arg_reg": true
+    },
+    {
+      "addr": "0x555556262490",
+      "name": "exchange_end_block",
+      "regs_with_marker_offsets": [
+        "rax",
+        "rcx",
+        "rsi"
+      ],
+      "is_arg_reg": true
+    },
+    {
+      "addr": "0x555556268450",
+      "name": "compute_adl_requirement",
+      "regs_with_marker_offsets": [
+        "r14"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x5555564b9bf0",
+      "name": "sub_5555564b9bf0",
+      "regs_with_marker_offsets": [
+        "r13"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555556911020",
+      "name": "sub_555556911020",
+      "regs_with_marker_offsets": [
+        "rbp"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555556fefd40",
+      "name": "sub_555556fefd40",
+      "regs_with_marker_offsets": [
+        "r14"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555557319c90",
+      "name": "sub_555557319c90",
+      "regs_with_marker_offsets": [
+        "rbx"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x5555574a0db0",
+      "name": "sub_5555574a0db0",
+      "regs_with_marker_offsets": [
+        "rbx"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x55555759dd00",
+      "name": "sub_55555759dd00",
+      "regs_with_marker_offsets": [
+        "rsi"
+      ],
+      "is_arg_reg": true
+    },
+    {
+      "addr": "0x55555759e330",
+      "name": "sub_55555759e330",
+      "regs_with_marker_offsets": [
+        "rax",
+        "rdx",
+        "rsi"
+      ],
+      "is_arg_reg": true
+    },
+    {
+      "addr": "0x55555759f940",
+      "name": "sub_55555759f940",
+      "regs_with_marker_offsets": [
+        "rax"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x5555575c49f0",
+      "name": "sub_5555575c49f0",
+      "regs_with_marker_offsets": [
+        "r14"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x5555575c5180",
+      "name": "sub_5555575c5180",
+      "regs_with_marker_offsets": [
+        "r12"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x5555577ff7d0",
+      "name": "sub_5555577ff7d0",
+      "regs_with_marker_offsets": [
+        "rbx"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555557c3ad00",
+      "name": "sub_555557c3ad00",
+      "regs_with_marker_offsets": [
+        "rax"
+      ],
+      "is_arg_reg": false
+    },
+    {
+      "addr": "0x555557d50ef0",
+      "name": "sub_555557d50ef0",
+      "regs_with_marker_offsets": [
+        "r14"
+      ],
+      "is_arg_reg": false
+    }
+  ]
+}

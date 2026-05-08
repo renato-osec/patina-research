@@ -1,0 +1,509 @@
+{
+  "top_n": 100,
+  "stdlib_included": true,
+  "stdlib_root": "/home/renny/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library",
+  "extracted_dir": "/home/renny/doc/work/research/patina/agents/common/data/crate_cache/extracted",
+  "n_crates_ok": 100,
+  "crate_list": [
+    {
+      "name": "hashbrown",
+      "version": "0.17.0",
+      "recent_downloads": 349637901
+    },
+    {
+      "name": "getrandom",
+      "version": "0.4.2",
+      "recent_downloads": 304226722
+    },
+    {
+      "name": "windows-sys",
+      "version": "0.61.2",
+      "recent_downloads": 278647299
+    },
+    {
+      "name": "syn",
+      "version": "2.0.117",
+      "recent_downloads": 277741877
+    },
+    {
+      "name": "rand_core",
+      "version": "0.10.1",
+      "recent_downloads": 240072267
+    },
+    {
+      "name": "bitflags",
+      "version": "2.11.1",
+      "recent_downloads": 234084984
+    },
+    {
+      "name": "rand",
+      "version": "0.10.1",
+      "recent_downloads": 231442408
+    },
+    {
+      "name": "thiserror-impl",
+      "version": "2.0.18",
+      "recent_downloads": 209446137
+    },
+    {
+      "name": "thiserror",
+      "version": "2.0.18",
+      "recent_downloads": 209334497
+    },
+    {
+      "name": "libc",
+      "version": "0.2.186",
+      "recent_downloads": 207711396
+    },
+    {
+      "name": "itertools",
+      "version": "0.14.0",
+      "recent_downloads": 204027359
+    },
+    {
+      "name": "indexmap",
+      "version": "2.14.0",
+      "recent_downloads": 203728574
+    },
+    {
+      "name": "base64",
+      "version": "0.22.1",
+      "recent_downloads": 203063248
+    },
+    {
+      "name": "quote",
+      "version": "1.0.45",
+      "recent_downloads": 197399378
+    },
+    {
+      "name": "rand_chacha",
+      "version": "0.10.0",
+      "recent_downloads": 195706307
+    },
+    {
+      "name": "proc-macro2",
+      "version": "1.0.106",
+      "recent_downloads": 192182911
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.24",
+      "recent_downloads": 184842419
+    },
+    {
+      "name": "socket2",
+      "version": "0.6.3",
+      "recent_downloads": 178907388
+    },
+    {
+      "name": "regex-syntax",
+      "version": "0.8.10",
+      "recent_downloads": 178591196
+    },
+    {
+      "name": "cfg-if",
+      "version": "1.0.4",
+      "recent_downloads": 178359445
+    },
+    {
+      "name": "memchr",
+      "version": "2.8.0",
+      "recent_downloads": 177536764
+    },
+    {
+      "name": "windows_x86_64_msvc",
+      "version": "0.53.1",
+      "recent_downloads": 176388189
+    },
+    {
+      "name": "windows-targets",
+      "version": "0.53.5",
+      "recent_downloads": 174053545
+    },
+    {
+      "name": "rustix",
+      "version": "1.1.4",
+      "recent_downloads": 172393884
+    },
+    {
+      "name": "windows_x86_64_gnu",
+      "version": "0.53.1",
+      "recent_downloads": 171964738
+    },
+    {
+      "name": "windows_aarch64_msvc",
+      "version": "0.53.1",
+      "recent_downloads": 171217757
+    },
+    {
+      "name": "windows_i686_msvc",
+      "version": "0.53.1",
+      "recent_downloads": 170813871
+    },
+    {
+      "name": "windows_i686_gnu",
+      "version": "0.53.1",
+      "recent_downloads": 170613298
+    },
+    {
+      "name": "heck",
+      "version": "0.5.0",
+      "recent_downloads": 170307872
+    },
+    {
+      "name": "windows_x86_64_gnullvm",
+      "version": "0.53.1",
+      "recent_downloads": 167120872
+    },
+    {
+      "name": "windows_aarch64_gnullvm",
+      "version": "0.53.1",
+      "recent_downloads": 167114429
+    },
+    {
+      "name": "itoa",
+      "version": "1.0.18",
+      "recent_downloads": 165741342
+    },
+    {
+      "name": "cc",
+      "version": "1.2.61",
+      "recent_downloads": 165519178
+    },
+    {
+      "name": "linux-raw-sys",
+      "version": "0.12.1",
+      "recent_downloads": 164180099
+    },
+    {
+      "name": "regex-automata",
+      "version": "0.4.14",
+      "recent_downloads": 162427700
+    },
+    {
+      "name": "serde",
+      "version": "1.0.228",
+      "recent_downloads": 161850990
+    },
+    {
+      "name": "serde_derive",
+      "version": "1.0.228",
+      "recent_downloads": 157300812
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.149",
+      "recent_downloads": 156778049
+    },
+    {
+      "name": "once_cell",
+      "version": "1.21.4",
+      "recent_downloads": 154128416
+    },
+    {
+      "name": "log",
+      "version": "0.4.29",
+      "recent_downloads": 152384786
+    },
+    {
+      "name": "autocfg",
+      "version": "1.5.0",
+      "recent_downloads": 150544947
+    },
+    {
+      "name": "clap",
+      "version": "4.6.1",
+      "recent_downloads": 146000913
+    },
+    {
+      "name": "zerocopy",
+      "version": "0.8.48",
+      "recent_downloads": 145040174
+    },
+    {
+      "name": "smallvec",
+      "version": "1.15.1",
+      "recent_downloads": 144888953
+    },
+    {
+      "name": "regex",
+      "version": "1.12.3",
+      "recent_downloads": 144479062
+    },
+    {
+      "name": "aho-corasick",
+      "version": "1.1.4",
+      "recent_downloads": 142115346
+    },
+    {
+      "name": "parking_lot_core",
+      "version": "0.9.12",
+      "recent_downloads": 141609795
+    },
+    {
+      "name": "http",
+      "version": "1.4.0",
+      "recent_downloads": 140693536
+    },
+    {
+      "name": "mio",
+      "version": "1.2.0",
+      "recent_downloads": 139909467
+    },
+    {
+      "name": "parking_lot",
+      "version": "0.12.5",
+      "recent_downloads": 139146683
+    },
+    {
+      "name": "ryu",
+      "version": "1.0.23",
+      "recent_downloads": 138974816
+    },
+    {
+      "name": "pin-project-lite",
+      "version": "0.2.17",
+      "recent_downloads": 136889227
+    },
+    {
+      "name": "strsim",
+      "version": "0.11.1",
+      "recent_downloads": 136054204
+    },
+    {
+      "name": "bytes",
+      "version": "1.11.1",
+      "recent_downloads": 135815214
+    },
+    {
+      "name": "rustls",
+      "version": "0.23.39",
+      "recent_downloads": 133112963
+    },
+    {
+      "name": "digest",
+      "version": "0.11.2",
+      "recent_downloads": 131570997
+    },
+    {
+      "name": "version_check",
+      "version": "0.9.5",
+      "recent_downloads": 130097954
+    },
+    {
+      "name": "lock_api",
+      "version": "0.4.14",
+      "recent_downloads": 129462663
+    },
+    {
+      "name": "block-buffer",
+      "version": "0.12.0",
+      "recent_downloads": 128918138
+    },
+    {
+      "name": "tokio",
+      "version": "1.52.1",
+      "recent_downloads": 128591257
+    },
+    {
+      "name": "rustls-webpki",
+      "version": "0.103.13",
+      "recent_downloads": 126911033
+    },
+    {
+      "name": "clap_lex",
+      "version": "1.1.0",
+      "recent_downloads": 126526528
+    },
+    {
+      "name": "semver",
+      "version": "1.0.28",
+      "recent_downloads": 126502486
+    },
+    {
+      "name": "slab",
+      "version": "0.4.12",
+      "recent_downloads": 125935612
+    },
+    {
+      "name": "winnow",
+      "version": "1.0.2",
+      "recent_downloads": 125421929
+    },
+    {
+      "name": "cpufeatures",
+      "version": "0.3.0",
+      "recent_downloads": 125242616
+    },
+    {
+      "name": "errno",
+      "version": "0.3.14",
+      "recent_downloads": 124935192
+    },
+    {
+      "name": "anyhow",
+      "version": "1.0.102",
+      "recent_downloads": 124916486
+    },
+    {
+      "name": "futures-core",
+      "version": "0.3.32",
+      "recent_downloads": 124256823
+    },
+    {
+      "name": "hyper",
+      "version": "1.9.0",
+      "recent_downloads": 123767328
+    },
+    {
+      "name": "either",
+      "version": "1.15.0",
+      "recent_downloads": 123557616
+    },
+    {
+      "name": "futures-task",
+      "version": "0.3.32",
+      "recent_downloads": 123058453
+    },
+    {
+      "name": "futures-util",
+      "version": "0.3.32",
+      "recent_downloads": 122956544
+    },
+    {
+      "name": "sha2",
+      "version": "0.11.0",
+      "recent_downloads": 122815104
+    },
+    {
+      "name": "shlex",
+      "version": "1.3.0",
+      "recent_downloads": 122484071
+    },
+    {
+      "name": "scopeguard",
+      "version": "1.2.0",
+      "recent_downloads": 120648280
+    },
+    {
+      "name": "equivalent",
+      "version": "1.0.2",
+      "recent_downloads": 120535577
+    },
+    {
+      "name": "idna",
+      "version": "1.1.0",
+      "recent_downloads": 120085922
+    },
+    {
+      "name": "toml_datetime",
+      "version": "1.1.1+spec-1.1.0",
+      "recent_downloads": 119953931
+    },
+    {
+      "name": "lazy_static",
+      "version": "1.5.0",
+      "recent_downloads": 119045820
+    },
+    {
+      "name": "futures-sink",
+      "version": "0.3.32",
+      "recent_downloads": 118921741
+    },
+    {
+      "name": "num-traits",
+      "version": "0.2.19",
+      "recent_downloads": 118879600
+    },
+    {
+      "name": "futures-channel",
+      "version": "0.3.32",
+      "recent_downloads": 118758361
+    },
+    {
+      "name": "serde_core",
+      "version": "1.0.228",
+      "recent_downloads": 118543529
+    },
+    {
+      "name": "typenum",
+      "version": "1.20.0",
+      "recent_downloads": 118504792
+    },
+    {
+      "name": "crypto-common",
+      "version": "0.2.1",
+      "recent_downloads": 118489451
+    },
+    {
+      "name": "generic-array",
+      "version": "1.4.0",
+      "recent_downloads": 118092552
+    },
+    {
+      "name": "http-body",
+      "version": "1.0.1",
+      "recent_downloads": 117074815
+    },
+    {
+      "name": "tracing-core",
+      "version": "0.1.36",
+      "recent_downloads": 117033328
+    },
+    {
+      "name": "percent-encoding",
+      "version": "2.3.2",
+      "recent_downloads": 116940680
+    },
+    {
+      "name": "toml",
+      "version": "1.1.2+spec-1.1.0",
+      "recent_downloads": 116791722
+    },
+    {
+      "name": "url",
+      "version": "2.5.8",
+      "recent_downloads": 116129669
+    },
+    {
+      "name": "tracing",
+      "version": "0.1.44",
+      "recent_downloads": 115705471
+    },
+    {
+      "name": "tokio-rustls",
+      "version": "0.26.4",
+      "recent_downloads": 115633803
+    },
+    {
+      "name": "ppv-lite86",
+      "version": "0.2.21",
+      "recent_downloads": 115509386
+    },
+    {
+      "name": "futures-io",
+      "version": "0.3.32",
+      "recent_downloads": 114880056
+    },
+    {
+      "name": "miniz_oxide",
+      "version": "0.9.1",
+      "recent_downloads": 114829093
+    },
+    {
+      "name": "rustc-hash",
+      "version": "2.1.2",
+      "recent_downloads": 113513245
+    },
+    {
+      "name": "clap_builder",
+      "version": "4.6.0",
+      "recent_downloads": 113383832
+    },
+    {
+      "name": "fastrand",
+      "version": "2.4.1",
+      "recent_downloads": 113126108
+    }
+  ]
+}
