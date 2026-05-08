@@ -58,18 +58,22 @@ class _ColorStdout:
             self._real.write("".join(out))
         return len(s)
     def _colorize(self, line):
-        s = line.lstrip()
-        if not s.startswith("["):
+        # Only color the leading [bracketed] tag; leave the rest plain.
+        i = 0
+        while i < len(line) and line[i] in " \t":
+            i += 1
+        if i >= len(line) or line[i] != "[":
             return line
-        end = s.find("]")
-        if end <= 0:
+        end = line.find("]", i)
+        if end < 0:
             return line
-        token = s[1:end]
-        # Known stage tag wins (so [chain] stays gray during any stage).
+        token = line[i+1:end]
         c = _STAGE_COLOR.get(token)
         if c is None:
             c = _active_stage_color
-        return (c + line + _RESET) if c else line
+        if not c:
+            return line
+        return line[:i] + c + line[i:end+1] + _RESET + line[end+1:]
     def flush(self):
         if self._buf:
             self._real.write(self._buf)
@@ -201,9 +205,13 @@ def chain(
         # stages.
         if a.saved_bndb and a.out_bndb.exists():
             from recoveries import Recoveries
-            src_sc = a.out_sidecar
+            src_sc = Path(a.out_sidecar) if a.out_sidecar else None
             dst_sc = Recoveries.for_bndb(a.out_bndb).path
-            if src_sc and Path(src_sc).exists() and src_sc != dst_sc:
+            # `is_file()` not `exists()`: stages that don't write a
+            # sidecar (warper) leave `out_sidecar=Path("")`, which
+            # `exists()` reports True for (resolves to cwd `.`) and
+            # `shutil.copy2` then errors on a directory.
+            if src_sc and src_sc.is_file() and src_sc.resolve() != dst_sc.resolve():
                 import shutil
                 dst_sc.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src_sc, dst_sc)
