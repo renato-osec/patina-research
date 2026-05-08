@@ -21,20 +21,25 @@ from stage import StageArtifacts
 
 # Color stage-prefixed log lines so a chained run is easy to scan:
 # warper green, marinator yellow, signer cyan, flower orange (256-color).
-# Set NO_COLOR=1 (or pipe to a non-tty) to disable.
+# Per-fn agent lines (`[sub_4088b0]`, `[_ZN6source..]`, ...) inherit the
+# currently-running stage's color via `_active_stage_color`. Set
+# NO_COLOR=1 (or pipe to a non-tty) to disable.
 _STAGE_COLOR = {
-    "[warper]":    "\x1b[32m",
-    "[marinator]": "\x1b[33m",
-    "[signer]":    "\x1b[36m",
-    "[flower]":    "\x1b[38;5;208m",
-    "[chain]":     "\x1b[38;5;245m",
+    "warper":    "\x1b[32m",
+    "marinator": "\x1b[33m",
+    "signer":    "\x1b[36m",
+    "flower":    "\x1b[38;5;208m",
+    "chain":     "\x1b[38;5;245m",
 }
 _RESET = "\x1b[0m"
+_active_stage_color: str | None = None
 
 
 class _ColorStdout:
-    """Wrap a TextIO; line-buffered, colors any line whose first non-
-    whitespace token matches a known [stage] prefix."""
+    """Wrap a TextIO; line-buffered. Colors lines whose first
+    non-whitespace token is a `[stage]` prefix using `_STAGE_COLOR`,
+    and any other `[token]` prefix using the active stage's color
+    (set by chain() while a stage runs)."""
     def __init__(self, real):
         self._real = real
         self._buf = ""
@@ -54,10 +59,17 @@ class _ColorStdout:
         return len(s)
     def _colorize(self, line):
         s = line.lstrip()
-        for prefix, color in _STAGE_COLOR.items():
-            if s.startswith(prefix):
-                return color + line + _RESET
-        return line
+        if not s.startswith("["):
+            return line
+        end = s.find("]")
+        if end <= 0:
+            return line
+        token = s[1:end]
+        # Known stage tag wins (so [chain] stays gray during any stage).
+        c = _STAGE_COLOR.get(token)
+        if c is None:
+            c = _active_stage_color
+        return (c + line + _RESET) if c else line
     def flush(self):
         if self._buf:
             self._real.write(self._buf)
@@ -166,7 +178,12 @@ def chain(
             kwargs["submit_rounds"] = submit_rounds
             if prelude_file:
                 kwargs["prelude_file"] = prelude_file
-        a = run_stage(cur_bndb, **kwargs)
+        global _active_stage_color
+        _active_stage_color = _STAGE_COLOR.get(stage_name)
+        try:
+            a = run_stage(cur_bndb, **kwargs)
+        finally:
+            _active_stage_color = None
         artifacts.append(a)
         if a.return_code != 0:
             print(f"[chain] {stage_name} returned {a.return_code}; aborting",
