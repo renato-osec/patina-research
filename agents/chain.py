@@ -193,10 +193,20 @@ def chain(
             print(f"[chain] {stage_name} had {a.failed} failures; "
                   f"--stop-on-failure", flush=True)
             break
-        # Next stage reads from this stage's saved bndb if it landed,
-        # otherwise stays on the original input (sidecar still
-        # propagates findings either way).
+        # Next stage reads from this stage's saved bndb if it landed.
+        # Carry the sidecar forward too: each stage opens
+        # `<input-bndb-stem>.patina.json` next to its input, so without
+        # this copy the next stage sees an empty file and its prior_*
+        # tools / `_format_prior` prelude get nothing from earlier
+        # stages.
         if a.saved_bndb and a.out_bndb.exists():
+            from recoveries import Recoveries
+            src_sc = a.out_sidecar
+            dst_sc = Recoveries.for_bndb(a.out_bndb).path
+            if src_sc and Path(src_sc).exists() and src_sc != dst_sc:
+                import shutil
+                dst_sc.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_sc, dst_sc)
             cur_bndb = a.out_bndb
     return artifacts
 
