@@ -241,25 +241,10 @@ mod py {
         ))
     }
 
-    /// Each pyo3 wheel ships its own static copy of binaryninja-api.
-    /// Initialise our rust-side statics before touching any BV.
-    ///
-    /// CRITICAL: do NOT register a main-thread handler. The default
-    /// `headless::init()` spawns a "HeadlessMainThread" worker that
-    /// becomes the global main-thread action dispatcher; once that
-    /// thread exists, `BNExecuteOnMainThreadAndWait` posts every
-    /// action (including `bv.create_database`'s save lambda) to it.
-    /// The bv was loaded on Python's main thread, so running save
-    /// from HeadlessMainThread crashes inside binja's save logic
-    /// (thread-affinity mismatch, observed as SIGSEGV in BNExecute-
-    /// MainThreadAction). Python's `binaryninja` module never
-    /// registers a handler, so its `ExecuteOnMainThreadAndWait` runs
-    /// the lambda inline on the calling thread - which is what we
-    /// want. With `register_main_thread_handler = false`, the
-    /// IS_MAIN_INIT flag stays 0 and binja takes the inline path.
     static INIT_RUST_BINJA: std::sync::Once = std::sync::Once::new();
     fn ensure_binja_inited() {
         INIT_RUST_BINJA.call_once(|| {
+            // No main-thread handler: default spawns a HeadlessMainThread that bv.create_database segfaults on (thread affinity).
             let opts = binaryninja::headless::InitializationOptions::default()
                 .with_main_thread_handler(false);
             let _ = binaryninja::headless::init_with_opts(opts);
