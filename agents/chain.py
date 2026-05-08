@@ -19,6 +19,58 @@ os.environ.setdefault("BN_DISABLE_USER_PLUGINS", "1")
 from stage import StageArtifacts
 
 
+# Color stage-prefixed log lines so a chained run is easy to scan:
+# warper green, marinator yellow, signer cyan, flower orange (256-color).
+# Set NO_COLOR=1 (or pipe to a non-tty) to disable.
+_STAGE_COLOR = {
+    "[warper]":    "\x1b[32m",
+    "[marinator]": "\x1b[33m",
+    "[signer]":    "\x1b[36m",
+    "[flower]":    "\x1b[38;5;208m",
+    "[chain]":     "\x1b[38;5;245m",
+}
+_RESET = "\x1b[0m"
+
+
+class _ColorStdout:
+    """Wrap a TextIO; line-buffered, colors any line whose first non-
+    whitespace token matches a known [stage] prefix."""
+    def __init__(self, real):
+        self._real = real
+        self._buf = ""
+    def write(self, s):
+        if not s:
+            return 0
+        self._buf += s
+        out = []
+        while True:
+            nl = self._buf.find("\n")
+            if nl < 0:
+                break
+            line, self._buf = self._buf[:nl], self._buf[nl+1:]
+            out.append(self._colorize(line) + "\n")
+        if out:
+            self._real.write("".join(out))
+        return len(s)
+    def _colorize(self, line):
+        s = line.lstrip()
+        for prefix, color in _STAGE_COLOR.items():
+            if s.startswith(prefix):
+                return color + line + _RESET
+        return line
+    def flush(self):
+        if self._buf:
+            self._real.write(self._buf)
+            self._buf = ""
+        self._real.flush()
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+if os.environ.get("NO_COLOR") != "1" and sys.stdout.isatty():
+    sys.stdout = _ColorStdout(sys.stdout)
+
+
 # Lazy imports so each stage's heavy deps (binja, lymph, anemone) only
 # load when actually used.
 _STAGE_DIRS = {Path(__file__).resolve().parent / s
@@ -114,21 +166,15 @@ def chain(
             kwargs["submit_rounds"] = submit_rounds
             if prelude_file:
                 kwargs["prelude_file"] = prelude_file
-        print(f"\n=== chain: {stage_name} (input: {cur_bndb.name}) ===",
-              flush=True)
         a = run_stage(cur_bndb, **kwargs)
         artifacts.append(a)
-        print(f"=== chain: {stage_name} done -> "
-              f"bndb={a.out_bndb if a.saved_bndb else '(skipped)'}  "
-              f"json={a.out_json}  sidecar={a.out_sidecar}  "
-              f"perfect={a.perfect}/{a.targets} ===", flush=True)
         if a.return_code != 0:
-            print(f"=== chain: {stage_name} returned {a.return_code}; aborting ===",
+            print(f"[chain] {stage_name} returned {a.return_code}; aborting",
                   flush=True)
             break
         if stop_on_failure and a.failed:
-            print(f"=== chain: {stage_name} had {a.failed} failures; "
-                  f"--stop-on-failure ===", flush=True)
+            print(f"[chain] {stage_name} had {a.failed} failures; "
+                  f"--stop-on-failure", flush=True)
             break
         # Next stage reads from this stage's saved bndb if it landed,
         # otherwise stays on the original input (sidecar still
