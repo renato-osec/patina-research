@@ -123,17 +123,17 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
             sidecar_path.unlink()
             print(f"[{name}] cleared sidecar: {sidecar_path}", flush=True)
 
-    # Initialize binja's main-thread action runner BEFORE bv.load so
-    # any actions queued during the load (analysis kickoff, plugin
-    # registrations, file-io callbacks) have a dispatcher already in
-    # place. Initializing post-load was timing-fragile: actions
-    # queued during load could race the dispatcher's startup, leaving
-    # BNCreateDatabase waiting on a pthread cond for an event that
-    # already fired (or never fires).
-    try:
-        bn._init_plugins()
-    except Exception as e:
-        print(f"[{name}] _init_plugins warned: {e}", flush=True)
+    # NB: do NOT call `bn._init_plugins()` here. It sets binja's
+    # IS_MAIN_THREAD_INITED flag (c6ea260 in libbinaryninjacore) AND
+    # registers a main_thread_id. Once the flag is set,
+    # BNExecuteOnMainThreadAndWait posts work to a queue and waits
+    # on a cv unless `pthread_self() == main_thread_id`. Anemone's
+    # Rust-side `binaryninja::headless::init()` (called lazily on
+    # first anemone.analyze) and asyncio shuffle threads enough that
+    # the registered main thread isn't always the one calling
+    # bv.create_database, deadlocking on `cv.wait` with no runner.
+    # Leaving the flag at 0 keeps BNExecuteOnMainThreadAndWait on
+    # the inline shortcut, which is what we want headless.
     print(f"[{name}] loading {bndb}", flush=True)
     bv = bn.load(str(bndb))
     if bv is None:
