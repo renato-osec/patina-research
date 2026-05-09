@@ -5,6 +5,8 @@
 # even if it didn't validate.
 from __future__ import annotations
 
+import os
+
 from typing import Any, Awaitable, Callable
 
 from claude_agent_sdk import tool, HookMatcher
@@ -91,6 +93,7 @@ def make(
         "scolded": False,    # True once we've sent the free antipattern warning
         "applied": "",       # status of the post-accept bndb write-back (apply_ctx)
         "signer_bounced": False,  # we bounced once for diverging from signer's sig
+        "complexity_gated": False,  # bounced once for missing regions on big fn
     }
 
     # Region-scoped accepted submissions (Rust translations of
@@ -282,6 +285,44 @@ def make(
         captured["attempts"] += 1
         attempt = captured["attempts"]
         captured["validations"].append((decl, perfect, feedback))
+
+        # Complexity gate: if the binary fn has many basic blocks AND
+        # the agent jumped straight to a whole-fn submission without
+        # accepting any regions, bounce ONCE on attempt 1 to push the
+        # agent toward `submit_region`. Override: rationale starting
+        # with `whole-fn-override:` skips the gate.
+        if (attempt == 1
+                and not captured["complexity_gated"]
+                and apply_ctx is not None
+                and not rationale.lower().startswith("whole-fn-override:")
+                and not captured.get("regions")):
+            try:
+                fn = apply_ctx.target_func()
+                bb_count = len(list(fn.basic_blocks)) if fn else 0
+            except Exception:
+                bb_count = 0
+            threshold = int(os.environ.get("FLOWER_REGION_GATE_BBS", "25"))
+            if bb_count > threshold:
+                captured["complexity_gated"] = True
+                return {
+                    "decision": "block",
+                    "reason": (
+                        f"Submission DEFERRED (attempt 1/{max_rounds}) "
+                        f"- this fn has {bb_count} basic blocks (> {threshold}). "
+                        f"Whole-fn reconstructions on big bodies tend to cheese "
+                        f"or transport-crash; reconstruct piece-wise instead.\n\n"
+                        f"  1. Call `region_blocks` to enumerate BBs.\n"
+                        f"  2. Pick a contiguous range (3-8 BBs - a loop body, "
+                        f"branch arm, init, etc).\n"
+                        f"  3. `submit_region` for each piece (re-validates + "
+                        f"persists to sidecar).\n"
+                        f"  4. Re-submit the full body once at least one region "
+                        f"is accepted (or override with rationale "
+                        f"`whole-fn-override:<reason>`).\n\n"
+                        f"Region snippets are compositional - paste them into "
+                        f"the final body in topo order."
+                    ),
+                }
 
         # Signer-sig enforcement: on attempt 1, if signer recovered a
         # signature for this fn and the agent's submission diverges
