@@ -55,6 +55,11 @@ class StageSpec:
     add_extra_args: Callable[[argparse.ArgumentParser], None] | None = None
     description: str = ""
     default_model: str = "opus"
+    # Per-stage default max-turns ceiling. Flower benefits from a
+    # lower cap because opus tends to ramble past the limit and dump
+    # 50k+ output tokens trying to wrap up - that's the SDK's "Command
+    # failed with exit code 1" path.
+    default_max_turns: int = 16
     # Recoveries-sidecar namespace(s) this stage may write to. Empty
     # set = read-only access to the sidecar. None = unrestricted (back-
     # compat). Lower stages (warper / marinator) keep this empty so
@@ -72,8 +77,8 @@ def default_argparser(spec: StageSpec) -> argparse.ArgumentParser:
                    help=f"Parallel {spec.name} agents")
     p.add_argument("--model", "-m", default=spec.default_model,
                    help=f"LLM model (default: {spec.default_model})")
-    p.add_argument("--max-turns", type=int, default=16,
-                   help="Max turns per agent (default 16)")
+    p.add_argument("--max-turns", type=int, default=spec.default_max_turns,
+                   help=f"Max turns per agent (default {spec.default_max_turns})")
     p.add_argument("--timeout", type=int, default=None,
                    help="Per-fn wall-clock budget in seconds.")
     p.add_argument("--output", "-o", default=f"outputs/{spec.name}",

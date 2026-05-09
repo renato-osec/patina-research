@@ -60,6 +60,11 @@ SPEC = StageSpec(
     add_extra_args=_add_args,
     extra_run_kwargs=_extra_run_kwargs,
     write_namespaces={"flower"},
+    # Tighter cap than other stages: opus on big fns ran past 16
+    # turns last chain, dumped 50k+ tokens trying to wrap up, and
+    # crashed the SDK CLI with exit code 1. 12 turns is enough for
+    # any submission that's actually going to land; bigger is wasted.
+    default_max_turns=12,
 )
 
 
