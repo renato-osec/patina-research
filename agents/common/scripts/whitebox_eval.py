@@ -75,10 +75,14 @@ def _recovered_sig(decl_or_source: str) -> tuple[str | None, int, str]:
 
 
 def _body_real(source: str, fn_name: str | None) -> bool:
-    """True if the recovered fn body has > 2 meaningful statements."""
+    """True if the recovered fn body has meaningful content. Heuristic:
+       (a) >= 2 meaningful statements, OR
+       (b) any of `panic!`, `loop {}`, `unreachable!`, real method call
+           with arg use - i.e. anything that exercises the inputs.
+       Excludes empty body and pure `let _ = X` discards.
+    """
     if not source or not fn_name:
         return False
-    # Match `fn <name>(...) ... { ... }` body greedily to last `}`.
     m = re.search(
         r"\bfn\s+" + re.escape(fn_name) + r"\s*[^{]*\{(.*)\}",
         source, re.DOTALL,
@@ -86,9 +90,23 @@ def _body_real(source: str, fn_name: str | None) -> bool:
     if not m:
         return False
     body = m.group(1).strip()
+    if not body:
+        return False
     stmts = [s.strip() for s in body.split(";") if s.strip()
              and not s.strip().startswith("//")]
-    return len(stmts) > 2
+    # All-discard body: `let _ = ...` only. Cheese.
+    real_stmts = [s for s in stmts if not s.startswith("let _")]
+    if not real_stmts:
+        return False
+    if len(real_stmts) >= 2:
+        return True
+    # Single-stmt body: real iff it's a panic/return/expr, not stub.
+    s = real_stmts[0]
+    real_tokens = ("panic!", "loop {", "unreachable!", "todo!",
+                   "return ", ".expect(", ".unwrap(", "format_args!",
+                   "format!", "Some(", "None", "Ok(", "Err(",
+                   "if ", "match ")
+    return any(t in s for t in real_tokens)
 
 
 def _strip_abi_hash(name: str) -> str:
@@ -96,14 +114,58 @@ def _strip_abi_hash(name: str) -> str:
     return re.sub(r"::h[0-9a-f]{16}$", "", name)
 
 
+def _demangle_legacy_v0(name: str) -> list[str] | None:
+    """Demangle a legacy Rust mangled name (`_ZN<len><name>..17h<hex>E`)
+    into its path components, e.g. `_ZN6source4main17h..E` -> `["source", "main"]`.
+    Returns None if not a legacy mangled name."""
+    if not name.startswith("_ZN") or not name.endswith("E"):
+        return None
+    body = name[3:-1]
+    parts: list[str] = []
+    i = 0
+    while i < len(body):
+        # parse <len>
+        j = i
+        while j < len(body) and body[j].isdigit():
+            j += 1
+        if j == i:
+            break
+        n = int(body[i:j])
+        i = j
+        chunk = body[i:i+n]
+        i += n
+        # `17h<16hex>` is the trailing hash; if this chunk matches that
+        # shape, stop (don't include the hash in the demangled path).
+        if (n == 17 and chunk.startswith("h")
+                and re.fullmatch(r"h[0-9a-f]{16}", chunk)):
+            break
+        parts.append(chunk)
+    return parts or None
+
+
 def _leaf_name(name: str) -> str:
-    """Extract just the leaf identifier from a path: `mod::Type::method` -> `method`."""
+    """Extract just the leaf identifier:
+        `mod::Type::method::h<hash>` -> `method`
+        `_ZN<len>core<len>option<len>expect_failed17h..E` -> `expect_failed`
+        `<core::ops::drop::Drop for ...>::drop` -> `drop`
+    Falls back to the unchanged input if nothing identifiable found.
+    """
+    if not name:
+        return ""
+    # Rust legacy ABI mangled.
+    parts = _demangle_legacy_v0(name)
+    if parts:
+        return parts[-1]
     n = _strip_abi_hash(name)
-    n = n.split("::")[-1]
-    # Demangle Rust-mangled `_ZN...` very loosely: accept any [A-Za-z0-9_]+
-    if not re.fullmatch(r"[A-Za-z_][\w]*", n):
-        return n
-    return n
+    if "::" in n:
+        n = n.rsplit("::", 1)[-1]
+    # Strip trait-impl angle brackets if any: `<T as U>::method` already
+    # split above; `<...>::name` would have been handled. If it's still
+    # `<...>` shape, drop the angles + return contents.
+    n = n.strip()
+    if n.startswith("<") and ">" in n:
+        n = n.rsplit(">", 1)[-1].lstrip(":").strip()
+    return n or name
 
 
 def _score_fn(fn_name: str, signer_decl: str, flower_source: str,

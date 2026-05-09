@@ -1,0 +1,12 @@
+[marinator] 3 targets, workers=8, model=sonnet
+[start] _ZN4core6option13expect_failed17h95d2432053ef5ebbE @ 0x4079a0
+[start] _ZN4core4hash11BuildHasher8hash_one17he6ecdc9711935e32E @ 0x408720
+[done ] _ZN4core6option13expect_failed17h95d2432053ef5ebbE  {"renamed_vars": 9, "renamed_funcs": 1, "retypes": 0, "prototype_set": 1, "comments": 0, "types_declared": 0}  tools=9 iters=10 $0.178 t=91.7s
+[done ] _ZN4core4hash11BuildHasher8hash_one17he6ecdc9711935e32E  {"renamed_vars": 3, "renamed_funcs": 0, "retypes": 0, "prototypes_set": 1, "comments": 2, "types_declared": 0}  tools=10 iters=11 $0.307 t=188.4s
+[start] sub_4088b0 @ 0x4088b0
+[done ] sub_4088b0  {"renamed_vars": 13, "renamed_funcs": 1, "retypes": 0, "prototype_set": 1, "comments": 1, "types_declared": 0}  tools=8 iters=9 $0.214 t=165.5s
+[marinator] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/warper/binary.warped.patina.json
+[marinator] faulthandler armed -> outputs/chain_braintrust/marinator/marinator.fault (fd=10); send SIGUSR1 to pid 930211 for live dump
+[marinator] analysis drained in 0.1s
+[marinator] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/marinator/binary.warped.marinated.bndb (0.1s)
+[marinator] done in 353.8s, 0/3 perfect, 0 failed, 21,968 tokens, $0.699, output outputs/chain_braintrust/marinator/marinator.json

@@ -1,0 +1,37 @@
+{
+  "0x4079a0": {
+    "flower": {
+      "name": "core_option_expect_failed",
+      "source": "fn expect_failed(msg_ptr: &str) -> ! {\n    panic!(\"{}\", msg_ptr)\n}"
+    },
+    "signer": {
+      "name": "core_option_expect_failed",
+      "rust_signature": "(msg: &str) -> !",
+      "rust_types": ""
+    }
+  },
+  "0x408720": {
+    "flower": {
+      "name": "BuildHasher_hash_one_RandomState_u64",
+      "source": "use std::collections::hash_map::RandomState;\n\nfn BuildHasher_hash_one_RandomState_u64(this_: &RandomState, x: &u64) -> u64 {\n    let _ = this_;\n    *x\n}"
+    },
+    "signer": {
+      "name": "BuildHasher_hash_one_RandomState_u64",
+      "rust_signature": "(this: &RandomState, x: &u64) -> u64",
+      "rust_types": "use std::collections::hash_map::RandomState;"
+    }
+  },
+  "0x4088b0": {
+    "flower": {
+      "name": "hashmap_index_key",
+      "source": "use std::collections::HashMap;\n\n#[repr(C)]\npub struct Foo {\n    _hash: [u8; 0x30],\n    _map: HashMap<u64, u64>,\n    flag: bool,\n}\n\npub fn hashmap_index_key(map_ptr: &Foo, key: u64, early_exit_flag: i8) -> u64 {\n    if (map_ptr.flag as i8) == early_exit_flag {\n        return key;\n    }\n    map_ptr._map[&key]\n}"
+    }
+  },
+  "0x4089e0": {
+    "signer": {
+      "name": "main",
+      "rust_signature": "()",
+      "rust_types": ""
+    }
+  }
+}

@@ -1,0 +1,14 @@
+[signer] 4 targets, workers=8, model=opus
+[start] _ZN4core6option13expect_failed17h95d2432053ef5ebbE @ 0x4079a0
+[start] _ZN4core4hash11BuildHasher8hash_one17he6ecdc9711935e32E @ 0x408720
+[done ] _ZN4core6option13expect_failed17h95d2432053ef5ebbE  [OK]  decl='(msg: &str) -> !'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=5 iters=6 $0.196 t=49.2s
+[done ] _ZN4core4hash11BuildHasher8hash_one17he6ecdc9711935e32E  [OK]  decl='use std::collections::hash_map::RandomState;\n\n(this: &RandomState, x: &u64) -> u64'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=12 iters=6 $0.263 t=90.1s
+[start] hashmap_index_key @ 0x4088b0
+[done ] hashmap_index_key  [imperfect]  decl='use std::collections::HashMap;\n\npub struct State {\n    a: Vec<u64>,\n    b: Vec<u64>,\n    map: HashMap<u64, u64>,\n    flag: bool,\n}\n\n(this: &State, key: u64, flag: bool) -> u64'  final_score=0.80  perfect=False  exhausted=False  submits=1  tools=43 iters=23 $0.881 t=273.8s
+[start] _ZN6source4main17h9b511e39ef5f7278E @ 0x4089e0
+[done ] _ZN6source4main17h9b511e39ef5f7278E  [OK]  decl='()'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=5 iters=6 $0.127 t=26.1s
+[signer] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/marinator/binary.warped.marinated.patina.json
+[signer] faulthandler armed -> outputs/chain_braintrust/signer/signer.fault (fd=11); send SIGUSR1 to pid 930211 for live dump
+[signer] analysis drained in 0.1s
+[signer] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/signer/binary.warped.marinated.signed.bndb (0.1s)
+[signer] done in 390.0s, 3/4 perfect, 0 failed, 22,925 tokens, $1.467, output outputs/chain_braintrust/signer/signer.json

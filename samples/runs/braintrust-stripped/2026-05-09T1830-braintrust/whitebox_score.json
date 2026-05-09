@@ -1,0 +1,56 @@
+{
+  "run_dir": "/home/renny/doc/work/research/patina/samples/runs/braintrust-stripped/2026-05-09T1830-braintrust",
+  "source": "/home/renny/doc/work/research/patina/bench/benchmark_183/2021-braintrust/source.rs",
+  "ground_truth_fns": 7,
+  "fns_run": 4,
+  "fns_matched_in_gt": 0,
+  "signer_arity_match": "0/0",
+  "flower_arity_match": "0/0",
+  "flower_real_body": "0/4",
+  "per_fn": [
+    {
+      "leaf": "_ZN4core6option13expect_failed17h95d2432053ef5ebbE",
+      "in_gt": false,
+      "gt_arity": null,
+      "gt_ret": null,
+      "signer_arity": 1,
+      "signer_ret": "!",
+      "flower_arity": 1,
+      "flower_has_body": true,
+      "flower_body_real": false
+    },
+    {
+      "leaf": "_ZN4core4hash11BuildHasher8hash_one17he6ecdc9711935e32E",
+      "in_gt": false,
+      "gt_arity": null,
+      "gt_ret": null,
+      "signer_arity": 2,
+      "signer_ret": "u64",
+      "flower_arity": 0,
+      "flower_has_body": false,
+      "flower_body_real": false
+    },
+    {
+      "leaf": "hashmap_index_key",
+      "in_gt": false,
+      "gt_arity": null,
+      "gt_ret": null,
+      "signer_arity": 3,
+      "signer_ret": "u64",
+      "flower_arity": 3,
+      "flower_has_body": true,
+      "flower_body_real": false
+    },
+    {
+      "leaf": "_ZN6source4main17h9b511e39ef5f7278E",
+      "in_gt": false,
+      "gt_arity": null,
+      "gt_ret": null,
+      "signer_arity": 0,
+      "signer_ret": "",
+      "flower_arity": 0,
+      "flower_has_body": false,
+      "flower_body_real": false
+    }
+  ]
+}

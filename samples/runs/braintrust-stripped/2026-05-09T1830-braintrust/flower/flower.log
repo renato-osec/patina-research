@@ -1,0 +1,14 @@
+[flower] 4 targets, workers=8, model=opus
+[start] _ZN4core6option13expect_failed17h95d2432053ef5ebbE @ 0x4079a0
+[start] BuildHasher_hash_one_RandomState_u64 @ 0x408720
+[done ] BuildHasher_hash_one_RandomState_u64  [OK]  source='use std::collections::hash_map::RandomState;\n\nfn BuildHasher_hash_one_RandomState_u64(this_: &RandomState, x: &u64) -> u'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=9 iters=10 $0.341 t=379.6s
+[done ] _ZN4core6option13expect_failed17h95d2432053ef5ebbE  [OK]  source='fn expect_failed(msg_ptr: &str) -> ! {\n    panic!("{}", msg_ptr)\n}'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=15 iters=16 $0.614 t=427.6s
+[start] hashmap_index_key @ 0x4088b0
+[done ] hashmap_index_key  [OK]  source='use std::collections::HashMap;\n\n#[repr(C)]\npub struct Foo {\n    _hash: [u8; 0x30],\n    _map: HashMap<u64, u64>,\n    flag'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=21 iters=22 $0.679 t=165.3s
+[start] main @ 0x4089e0
+[done ] main  [FAILED]  source='use std::collections::HashMap;\nuse std::env;\nuse std::io::{Read, Write};\n\nfn main() {\n    let mut map_ptr = env::args();'  final_score=1.00  perfect=False  exhausted=True  submits=3  tools=17 iters=18 $1.180 t=245.9s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/signer/binary.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_braintrust/flower/flower.fault (fd=12); send SIGUSR1 to pid 930211 for live dump
+[flower] analysis drained in 0.2s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust/flower/binary.warped.marinated.signed.flowered.bndb (0.1s)
+[flower] done in 838.9s, 3/4 perfect, 1 failed, 37,737 tokens, $2.814, output outputs/chain_braintrust/flower/flower.json

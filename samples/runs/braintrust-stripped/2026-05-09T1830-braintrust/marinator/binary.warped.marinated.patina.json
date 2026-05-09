@@ -1,0 +1,23 @@
+{
+  "0x4079a0": {
+    "signer": {
+      "name": "core_option_expect_failed",
+      "rust_signature": "(msg: &str) -> !",
+      "rust_types": ""
+    }
+  },
+  "0x408720": {
+    "signer": {
+      "name": "BuildHasher_hash_one_RandomState_u64",
+      "rust_signature": "(this: &RandomState, x: &u64) -> u64",
+      "rust_types": "use std::collections::hash_map::RandomState;"
+    }
+  },
+  "0x4089e0": {
+    "signer": {
+      "name": "main",
+      "rust_signature": "()",
+      "rust_types": ""
+    }
+  }
+}
