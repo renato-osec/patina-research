@@ -1,5 +1,5 @@
-# Validator core for the flower agent: rustc-compile (lymph) + binary
-# dataflow (anemone) + cross-graph compatibility check by var-name.
+# Validator: rustc-compile (lymph) + binary dataflow (anemone) +
+# cross-graph compatibility check by var-name.
 from __future__ import annotations
 
 import re
@@ -16,9 +16,7 @@ _RUST_HASH_RE = re.compile(r"::h[0-9a-f]{16}$")
 
 
 def clean_fn_name(symbol_short_name: str) -> str:
-    """`source::State::jump::hc4be...e` -> `jump` (the leaf the agent
-    should write in Rust source). Demangled, hash-stripped, leaf-only.
-    Fall back to the input if it has no `::` separators."""
+    """`source::State::jump::hc4be...` -> `jump`; hash-stripped leaf."""
     s = _RUST_HASH_RE.sub("", symbol_short_name or "")
     if "::" in s:
         s = s.rsplit("::", 1)[-1]
@@ -29,8 +27,7 @@ _ALLOW_WHITELIST = {"dead_code"}
 
 
 def _bad_inner_allow(source: str) -> list[str]:
-    """Return the list of `#![allow(<lint>)]` lints used at the file
-    level that aren't in the whitelist. Empty list = clean."""
+    """File-level `#![allow(...)]` lints not in whitelist."""
     import re
     bad: list[str] = []
     for m in re.finditer(r"#!\[allow\(([^)]+)\)\]", source):
@@ -43,19 +40,7 @@ def _bad_inner_allow(source: str) -> list[str]:
 
 def _is_trivial_body(rust_source: str, rust_fn_name: str,
                     bin_block_count: int) -> tuple[bool, str]:
-    """Detect cheese bodies that pass the validator without actually
-    reconstructing the function. Two patterns:
-
-      1. Empty body: `fn foo(...) {}` for a fn with > 4 basic blocks.
-
-      2. `let _ = X` ratio: agent binds HLIL var names with `let _`
-         (which dataflow ignores) so the binding check passes but no
-         meaningful flow is reconstructed. If half-or-more of the fn
-         body's statements are `let _ = ...`, it's binding theater.
-
-    Both patterns make dataflow trivially compatible (no flow to
-    compare) and return a reconstruction with zero real semantics.
-    """
+    """Cheese-body detector: empty fn, or high-density `let _` binding."""
     import re
     m = re.search(r"\bfn\s+" + re.escape(rust_fn_name)
                   + r"\s*[^{]*\{(.*)\}", rust_source, re.DOTALL)
@@ -70,10 +55,8 @@ def _is_trivial_body(rust_source: str, rust_fn_name: str,
             f"{bin_block_count} basic blocks. Reconstruct the actual "
             f"logic."
         )
-    # Multi-arg `let _ = (X, Y, Z, ...)` is the load-bearing cheese:
-    # the agent dumps several args (or HLIL-bound locals) into a
-    # single underscore so the binding check counts them as "used"
-    # while dataflow sees no flow. Reject any tuple with >= 2 idents.
+    # Multi-arg `let _ = (X, Y, ...)` cheeses binding-check: counts as
+    # used, dataflow sees no flow. Reject tuples >=2 idents.
     multi_underscore_re = re.compile(
         r"let\s+_\s*(?::\s*[^=]+)?=\s*\(\s*([A-Za-z_][\w]*\s*"
         r"(?:,\s*[A-Za-z_][\w]*\s*){1,})\)\s*"
@@ -93,7 +76,6 @@ def _is_trivial_body(rust_source: str, rust_fn_name: str,
             f"computation; if any are truly unused, drop them from "
             f"the signature."
         )
-    # Also catch high-density single `let _ =` binding theater.
     let_underscore = sum(1 for s in stmts if s.startswith("let _"))
     if (let_underscore >= max(3, len(stmts) // 3)
             and bin_block_count > 4):

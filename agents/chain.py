@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-# Sequentially run marinator -> signer -> flower (or any subset) on
-# the same target set. Each stage is a function: takes the previous
-# stage's saved bndb (or the input if no prior bndb) and produces a
-# new bndb + JSON summary + the cross-stage `<bndb>.patina.json`
-# sidecar. The sidecar accumulates per-stage findings keyed by addr,
-# so a later stage's tools (`prior_metadata`, `signer_types`, etc.)
-# automatically see whatever earlier stages recovered.
+# Sequentially run marinator -> signer -> flower on one bndb; sidecar
+# accumulates per-stage findings keyed by fn addr.
 from __future__ import annotations
 
 import argparse
@@ -19,11 +14,7 @@ os.environ.setdefault("BN_DISABLE_USER_PLUGINS", "1")
 from stage import StageArtifacts
 
 
-# Color stage-prefixed log lines so a chained run is easy to scan:
-# warper green, marinator yellow, signer cyan, flower orange (256-color).
-# Per-fn agent lines (`[sub_4088b0]`, `[_ZN6source..]`, ...) inherit the
-# currently-running stage's color via `_active_stage_color`. Set
-# NO_COLOR=1 (or pipe to a non-tty) to disable.
+# NO_COLOR=1 or non-tty disables.
 _STAGE_COLOR = {
     "warper":    "\x1b[32m",
     "marinator": "\x1b[33m",
@@ -36,10 +27,7 @@ _active_stage_color: str | None = None
 
 
 class _ColorStdout:
-    """Wrap a TextIO; line-buffered. Colors lines whose first
-    non-whitespace token is a `[stage]` prefix using `_STAGE_COLOR`,
-    and any other `[token]` prefix using the active stage's color
-    (set by chain() while a stage runs)."""
+    """Line-buffered stdout wrapper; colors `[stage]`/`[token]` prefixes."""
     def __init__(self, real):
         self._real = real
         self._buf = ""
@@ -58,7 +46,6 @@ class _ColorStdout:
             self._real.write("".join(out))
         return len(s)
     def _colorize(self, line):
-        # Only color the leading [bracketed] tag; leave the rest plain.
         i = 0
         while i < len(line) and line[i] in " \t":
             i += 1
@@ -87,18 +74,13 @@ if os.environ.get("NO_COLOR") != "1" and sys.stdout.isatty():
     sys.stdout = _ColorStdout(sys.stdout)
 
 
-# Lazy imports so each stage's heavy deps (binja, lymph, anemone) only
-# load when actually used.
 _STAGE_DIRS = {Path(__file__).resolve().parent / s
                for s in ("warper", "marinator", "signer", "flower")}
 
 
 def _purge_stage_modules() -> None:
-    """Drop any sys.modules entry whose __file__ lives inside a stage
-    dir. Each stage has its own `submit.py` / `write.py` / etc. that
-    all collide on the top-level `submit` / `write` module name; if
-    we let the cache linger, the next stage's `import submit` returns
-    the prior stage's module and crashes on signature mismatch."""
+    """Drop cached stage-local modules. Each stage has its own
+    submit.py/write.py that collide on the top-level module name."""
     for n, m in list(sys.modules.items()):
         f = getattr(m, "__file__", None) or ""
         if any(str(d) in f for d in _STAGE_DIRS):
@@ -106,11 +88,6 @@ def _purge_stage_modules() -> None:
 
 
 def _load_stage(name: str):
-    # Load each stage's pipeline.py as a *file* via importlib so the
-    # agent-private sys.path setup at the top of each pipeline.py
-    # works the same way it does standalone. Purge any cached
-    # stage-local modules first so submit.py / write.py / etc. from
-    # the prior stage don't shadow this one's.
     _purge_stage_modules()
     import importlib.util
     path = Path(__file__).resolve().parent / name / "pipeline.py"
@@ -121,9 +98,7 @@ def _load_stage(name: str):
     if spec is None or spec.loader is None:
         raise ImportError(f"could not load {path}")
     mod = importlib.util.module_from_spec(spec)
-    # Register in sys.modules BEFORE exec — `@dataclass` machinery
-    # looks up `cls.__module__` there and crashes with `NoneType has
-    # no attribute '__dict__'` otherwise.
+    # Register before exec so @dataclass `cls.__module__` lookup works.
     sys.modules[mod_name] = mod
     spec.loader.exec_module(mod)
     return mod.SPEC, mod.run_stage
@@ -149,12 +124,8 @@ def chain(
     stop_on_failure: bool = False,
     clear: bool = False,
 ) -> list[StageArtifacts]:
-    """Run each stage in turn, threading bndb output -> next input.
-    `model=None` lets each stage use its own default (marinator=sonnet,
-    signer/flower=opus). Pass an explicit value to override every stage.
-    `clear=True` deletes the input bndb's sidecar before the chain runs
-    so stale prior-run data doesn't leak into stage 0; subsequent stages
-    keep accumulating into the freshly-cleared file."""
+    """Run each stage in turn; bndb output -> next input. `model=None`
+    keeps each stage's own default. `clear=True` deletes the sidecar."""
     stages = stages or _DEFAULT_ORDER
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -197,20 +168,13 @@ def chain(
             print(f"[chain] {stage_name} had {a.failed} failures; "
                   f"--stop-on-failure", flush=True)
             break
-        # Next stage reads from this stage's saved bndb if it landed.
-        # Carry the sidecar forward too: each stage opens
-        # `<input-bndb-stem>.patina.json` next to its input, so without
-        # this copy the next stage sees an empty file and its prior_*
-        # tools / `_format_prior` prelude get nothing from earlier
-        # stages.
+        # Carry sidecar forward so the next stage sees prior findings.
         if a.saved_bndb and a.out_bndb.exists():
             from recoveries import Recoveries
             src_sc = Path(a.out_sidecar) if a.out_sidecar else None
             dst_sc = Recoveries.for_bndb(a.out_bndb).path
-            # `is_file()` not `exists()`: stages that don't write a
-            # sidecar (warper) leave `out_sidecar=Path("")`, which
-            # `exists()` reports True for (resolves to cwd `.`) and
-            # `shutil.copy2` then errors on a directory.
+            # is_file(): warper leaves out_sidecar="", which exists()
+            # returns True for (resolves to cwd) and copy2 chokes on.
             if src_sc and src_sc.is_file() and src_sc.resolve() != dst_sc.resolve():
                 import shutil
                 dst_sc.parent.mkdir(parents=True, exist_ok=True)
@@ -246,10 +210,7 @@ def main() -> int:
                    help="Comma-separated stage names; default: "
                         + ",".join(_DEFAULT_ORDER))
     p.add_argument("--addresses", nargs="*", default=[],
-                   help="Function addresses (`0x...`). Accepts both "
-                        "space-separated (`--addresses 0xA 0xB 0xC`) "
-                        "and the legacy comma-separated form "
-                        "(`--addresses 0xA,0xB,0xC`).")
+                   help="Function addresses; space- or comma-separated.")
     p.add_argument("--depth", type=int)
     p.add_argument("--output", "-o", default="outputs/chain",
                    help="Per-stage outputs go to <output>/<stage>/")
@@ -265,14 +226,9 @@ def main() -> int:
     p.add_argument("--stop-on-failure", action="store_true",
                    help="Abort the chain at the first stage with failures")
     p.add_argument("--clear", action="store_true",
-                   help="Delete the input bndb's `<stem>.patina.json` sidecar "
-                        "before running so prior-run data doesn't leak in. "
-                        "Stages still accumulate into the file as the chain "
-                        "progresses.")
+                   help="Delete the input sidecar before running.")
     args = p.parse_args()
 
-    # Flatten + accept both space-separated (nargs="*") and the legacy
-    # comma-separated form. `--addresses 0xA,0xB 0xC` -> [0xA, 0xB, 0xC].
     addrs: list[str] = []
     for a in (args.addresses or []):
         addrs.extend(p for p in str(a).split(",") if p.strip())
@@ -300,7 +256,5 @@ def main() -> int:
 if __name__ == "__main__":
     rc = main()
     sys.stdout.flush(); sys.stderr.flush()
-    # os._exit so binja/anemone destructors don't run during Python
-    # shutdown - same reason run_cli does it (multi-worker shutdown
-    # races segfault the interpreter post-success).
+    # os._exit: skip binja/anemone destructors that segfault on shutdown.
     os._exit(rc)
