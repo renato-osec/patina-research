@@ -119,7 +119,35 @@ WORKFLOW:
   4. `submit_reconstruction` early. First submit is never final; each
      bounce hands you full asm + HLIL to refine with.
 
-`check_reconstruction` and `submit_reconstruction` validate identically.
+REGION-FIRST FOR LARGE FNS (preferred for anything > ~10 BBs):
+  Whole-fn reconstruction is hard and noisy on big bodies. Instead:
+    a. Call `region_blocks` once. Pick a contiguous range of 3-8 BBs
+       that maps to a logical unit (loop body, branch arm, init,
+       cleanup) - blocks are in MLIL-SSA topological order so
+       neighbours are usually flow-connected.
+    b. For each region, write ONLY that region's Rust as a
+       standalone fn that takes the region's live-in HLIL vars and
+       returns the live-out one(s). Validate with
+       `check_region {source, block_start, block_end}` - the binary
+       side is scoped to that region's flow only, so the diff
+       output is dramatically tighter.
+    c. When the region is `perfect=True`, call
+       `submit_region {source, block_start, block_end, note}`. The
+       harness re-checks before persisting; accepted snippets land
+       in the cross-stage sidecar under `flower.regions[<addr>]` so
+       later visualisation can map binary blocks to recovered Rust
+       1-to-1.
+    d. After you've covered every meaningful region (or once you
+       have enough to compose the body), assemble them in a final
+       `submit_reconstruction`. Region snippets ARE compositional:
+       you can paste them in the body in topo order and check the
+       full fn at the end.
+
+`check_reconstruction` / `submit_reconstruction` validate the WHOLE
+function. `check_region` / `submit_region` validate JUST a BB range.
+Pick the right tool for the size of the work; over-reach on big
+fns is the most common cheese trap.
+
 You have 16 turns.
 
 RUSTC ERRORS ON SUBMIT ARE TRANSIENT. Concurrent workers stomp a shared
@@ -260,7 +288,7 @@ async def sign_function(
     # raw Rust ABI symbol (`_ZN6source5State4jump17h...E`); use binja's
     # demangled `symbol.short_name`, strip the `::h<16-hex>` ABI tag
     # and keep just the leaf so `fn jump(...)` is what the agent writes.
-    import consistency
+    import consistency  # noqa: F401  (also passed to submit.make for region re-check)
     short = (f.symbol.short_name if f and f.symbol else None) or name
     rust_fn_name = consistency.clean_fn_name(short)
     def validator(decl: str) -> tuple[bool, str, bool, bool, float]:
@@ -306,6 +334,11 @@ async def sign_function(
         asm_path=asm_path, hlil=hlil_text,
         force_iterate_first=not no_force_iter,
         apply_ctx=ctx,
+        # New region-submit path: re-validate on submit using
+        # consistency.check + bv. Threaded through so submit_region
+        # can persist verified Rust snippets.
+        rust_fn_name=rust_fn_name, consistency_module=consistency,
+        bv=bv, prelude=prelude, fn_addr=fn_addr,
     )
     check_tools = t_check.make(bv, fn_addr, prelude=prelude,
                                rust_fn_name=rust_fn_name,

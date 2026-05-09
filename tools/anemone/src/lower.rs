@@ -43,6 +43,66 @@ pub fn lower_block_at_addr(func: &Function, addr: u64) -> Option<FlowGraph> {
     lower_indices(func, &ssa, blk.start_index().0..blk.end_index().0)
 }
 
+/// Lower a contiguous range of basic blocks `[block_start, block_end)`
+/// into a single FlowGraph. Use this to scope flower's dataflow
+/// validation to a region of a function instead of the whole body.
+/// Returns None if the range is empty or out of bounds.
+pub fn lower_region(
+    func: &Function,
+    block_start: usize,
+    block_end: usize,
+) -> Option<FlowGraph> {
+    let mlil = func.medium_level_il().ok()?;
+    let ssa = mlil.ssa_form();
+    let bb_vec = ssa.basic_blocks();
+    let n_blocks = bb_vec.iter().count();
+    if block_start >= n_blocks || block_start >= block_end {
+        return None;
+    }
+    let end = block_end.min(n_blocks);
+    let mut indices: Vec<usize> = Vec::new();
+    for (i, b) in bb_vec.iter().enumerate() {
+        if i < block_start { continue; }
+        if i >= end { break; }
+        for j in b.start_index().0..b.end_index().0 {
+            indices.push(j);
+        }
+    }
+    lower_indices(func, &ssa, indices)
+}
+
+/// Public block-listing helper: `[(idx, start_addr, end_addr,
+/// instr_count), ...]` so the agent can navigate without re-walking
+/// MLIL-SSA in Python.
+pub fn list_blocks(func: &Function) -> Option<Vec<(usize, u64, u64, usize)>> {
+    let mlil = func.medium_level_il().ok()?;
+    let ssa = mlil.ssa_form();
+    let bb_vec = ssa.basic_blocks();
+    let n = bb_vec.iter().count();
+    let mut out = Vec::with_capacity(n);
+    for (i, b) in bb_vec.iter().enumerate() {
+        let start_addr = ssa
+            .instruction_from_index(b.start_index())
+            .map(|x| x.address)
+            .unwrap_or(0);
+        // end_addr = address of the last instr in the block (close approx)
+        let end_addr = if b.end_index().0 > b.start_index().0 {
+            ssa.instruction_from_index(
+                binaryninja::medium_level_il::MediumLevelInstructionIndex(
+                    b.end_index().0 - 1,
+                ),
+            )
+            .map(|x| x.address)
+            .unwrap_or(start_addr)
+        } else {
+            start_addr
+        };
+        let n = b.end_index().0.saturating_sub(b.start_index().0);
+        out.push((i, start_addr, end_addr, n));
+    }
+    Some(out)
+}
+
 /// Common body for the three public entry points: seeds params/return slot,
 /// then walks the supplied iterator of MLIL-SSA instruction indices.
 fn lower_indices(

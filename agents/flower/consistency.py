@@ -125,11 +125,17 @@ def check(
     bv,
     fn_addr: int,
     rust_fn_name: str,
+    region: tuple[int, int] | None = None,
 ) -> CheckResult:
     """Verify `rust_source` compiles and its dataflow matches the binary
     fn at `fn_addr`. Var binding is by name: every Rust var must be
     named after an HLIL var (`arg1`, `var_28`, etc.) so the mapping
     `rust_name -> il_name` is the identity intersection.
+
+    `region=(block_start, block_end)` scopes the binary lowering to a
+    contiguous range of basic blocks instead of the whole function;
+    use it for piece-wise reconstruction (the agent submits Rust for
+    just that region and validates against that region's dataflow).
     """
     # 0a. Bug 5: reject `#![allow(...)]` attribute spam unless it's
     # only `dead_code` (the one allow that's legitimately useful in
@@ -163,16 +169,26 @@ def check(
             False,
         )
 
-    # 2. Lower the binary fn (worst-case at calls; depth=0).
-    anem = anemone.analyze(bv, fn_addr)
+    # 2. Lower the binary fn (worst-case at calls; depth=0). Either
+    # the whole fn or a contiguous BB range, depending on `region`.
+    if region is None:
+        anem = anemone.analyze(bv, fn_addr)
+    else:
+        bs, be = int(region[0]), int(region[1])
+        anem = anemone.analyze_region(bv, fn_addr, bs, be)
 
     # 2a. Bug 6: reject trivial-body submissions for non-trivial fns.
     # `let _ = (...)` stubs trivially pass dataflow (no flow to compare)
-    # but contribute nothing.
+    # but contribute nothing. For region-scoped checks we use the
+    # region's BB count (smaller) so a 2-line region doesn't get
+    # rejected for being short.
     f = bv.get_function_at(fn_addr) or next(
         iter(bv.get_functions_containing(fn_addr) or []), None,
     )
-    bb_count = len(list(f.basic_blocks)) if f else 0
+    if region is None:
+        bb_count = len(list(f.basic_blocks)) if f else 0
+    else:
+        bb_count = max(0, int(region[1]) - int(region[0]))
     is_stub, stub_msg = _is_trivial_body(rust_source, rust_fn_name, bb_count)
     if is_stub:
         return CheckResult(False, stub_msg, False)

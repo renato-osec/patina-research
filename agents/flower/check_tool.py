@@ -220,9 +220,62 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
             return _err(f"check_reconstruction failed: {type(e).__name__}: {e}")
         return _ok(_format(r, rust_fn_name))
 
+    @tool("region_blocks",
+          "List the basic blocks (BBs) of the target function. Returns "
+          "`[(idx, start_addr, end_addr, instr_count), ...]` so you can "
+          "pick a contiguous range `[block_start, block_end)` to "
+          "reconstruct piece-wise via `check_region` / `submit_region`. "
+          "Tight regions (3-8 BBs) are easier to validate than the whole "
+          "fn; the validator can give a clean dataflow verdict on a "
+          "small region where the same check on the full body would be "
+          "noisy.",
+          {})
+    async def region_blocks(_args):
+        import anemone as _anemone
+        try:
+            blks = _anemone.list_blocks(bv, addr)
+        except Exception as e:
+            return _err(f"region_blocks: {type(e).__name__}: {e}")
+        if not blks:
+            return _ok("(no blocks)")
+        lines = [f"{len(blks)} basic blocks (idx, start-end, #instr):"]
+        for idx, sa, ea, n in blks:
+            lines.append(f"  bb[{idx:3d}]  {sa:#x}-{ea:#x}  ({n} insns)")
+        return _ok("\n".join(lines))
+
+    @tool("check_region",
+          "Validate a Rust source snippet against a *contiguous range "
+          "of basic blocks* `[block_start, block_end)` of the target "
+          "function (use `region_blocks` to list ranges). The validator "
+          "runs the same three checks as `check_reconstruction` but "
+          "scopes the binary side to that region's flow only - so a "
+          "small Rust function modeling, say, the loop body or a "
+          "single branch arm validates cleanly. Region results "
+          "compose into the full function via `submit_region`.",
+          {"source": str, "block_start": int, "block_end": int})
+    async def check_region(args):
+        src = (args.get("source") or "").strip()
+        bs = int(args.get("block_start") or 0)
+        be = int(args.get("block_end") or 0)
+        if not src:
+            return _err("source is empty")
+        if be <= bs:
+            return _err("block_end must be > block_start")
+        full = "\n".join(p for p in (prelude or "", src) if p).strip()
+        try:
+            r = consistency.check(full, bv=bv, fn_addr=addr,
+                                  rust_fn_name=rust_fn_name,
+                                  region=(bs, be))
+        except Exception as e:
+            return _err(f"check_region [{bs},{be}): "
+                        f"{type(e).__name__}: {e}")
+        head = f"region=[{bs},{be})  " + _format(r, rust_fn_name)
+        return _ok(head)
+
     return [il_vars, prior_metadata, prior_reconstruction, signer_types,
             bin_depends, bin_neighbors,
-            check_types, check_reconstruction]
+            check_types, check_reconstruction,
+            region_blocks, check_region]
 
 
 def _ok(text: str):

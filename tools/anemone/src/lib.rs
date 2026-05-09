@@ -4,7 +4,8 @@ pub mod flow;
 mod lower;
 
 pub use flow::{Edge, EdgeKind, FlowGraph, Slot, SlotId};
-pub use lower::{lower_block_at_addr, lower_block_at_index, lower_function};
+pub use lower::{lower_block_at_addr, lower_block_at_index, lower_function,
+                lower_region, list_blocks};
 
 use binaryninja::binary_view::{BinaryView, BinaryViewExt};
 use binaryninja::function::Function as BnFunction;
@@ -19,6 +20,21 @@ pub fn analyze_block_at_index(bv: &BinaryView, fn_addr: u64, start_index: usize)
 
 pub fn analyze_block_at_addr(bv: &BinaryView, fn_addr: u64, block_addr: u64) -> Option<FlowGraph> {
     with_func_at(bv, fn_addr, |f| lower_block_at_addr(f, block_addr))
+}
+
+pub fn analyze_region(
+    bv: &BinaryView,
+    fn_addr: u64,
+    block_start: usize,
+    block_end: usize,
+) -> Option<FlowGraph> {
+    with_func_at(bv, fn_addr, |f| lower_region(f, block_start, block_end))
+}
+
+pub fn list_blocks_for(bv: &BinaryView, fn_addr: u64) -> Option<Vec<(usize, u64, u64, usize)>> {
+    let funcs = bv.functions_at(fn_addr);
+    let func = funcs.iter().next()?;
+    list_blocks(&func)
 }
 
 fn with_func_at(
@@ -308,6 +324,43 @@ mod py {
         )
     }
 
+    /// Lower a contiguous range of basic blocks `[block_start, block_end)`
+    /// to a FlowGraph. Use this to scope flower's dataflow check to a
+    /// region of a function instead of the whole body.
+    #[pyfunction]
+    fn analyze_region(
+        py: Python<'_>,
+        py_bv: &Bound<'_, PyAny>,
+        fn_addr: u64,
+        block_start: usize,
+        block_end: usize,
+    ) -> PyResult<PyFlowGraph> {
+        run_lowering(
+            py, py_bv,
+            format!("no MLIL-SSA region [{block_start},{block_end}) in fn {fn_addr:#x}"),
+            move |view| crate::analyze_region(view, fn_addr, block_start, block_end),
+        )
+    }
+
+    /// `[(idx, start_addr, end_addr, instr_count), ...]` for every
+    /// basic block in the fn's MLIL-SSA. Lets agent navigate to
+    /// regions without recomputing in Python.
+    #[pyfunction]
+    fn list_blocks(
+        py: Python<'_>,
+        py_bv: &Bound<'_, PyAny>,
+        fn_addr: u64,
+    ) -> PyResult<Vec<(usize, u64, u64, usize)>> {
+        ensure_binja_inited();
+        let raw = bv_ptr_of(py, py_bv)?;
+        let owned = unsafe { OwnedBv::from_ptr(raw)? };
+        let view = owned.view();
+        py.allow_threads(|| crate::list_blocks_for(&view, fn_addr))
+            .ok_or_else(|| PyRuntimeError::new_err(
+                format!("no fn at {fn_addr:#x}"),
+            ))
+    }
+
     /// Cross-check rust-side dependencies (lymph edges) against a binary-side
     /// FlowGraph; `mapping[rust_var] = il_var`. Returns `(ok, [diffs])`.
     #[pyfunction]
@@ -388,6 +441,8 @@ mod py {
         m.add_function(wrap_pyfunction!(analyze, m)?)?;
         m.add_function(wrap_pyfunction!(analyze_block, m)?)?;
         m.add_function(wrap_pyfunction!(analyze_block_at_index, m)?)?;
+        m.add_function(wrap_pyfunction!(analyze_region, m)?)?;
+        m.add_function(wrap_pyfunction!(list_blocks, m)?)?;
         m.add_function(wrap_pyfunction!(check_compatibility, m)?)?;
         Ok(())
     }

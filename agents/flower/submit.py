@@ -60,6 +60,11 @@ def make(
     hlil: str | None = None,
     force_iterate_first: bool = True,
     apply_ctx: Any = None,
+    rust_fn_name: str = "",
+    consistency_module: Any = None,
+    bv: Any = None,
+    prelude: str | None = None,
+    fn_addr: int = 0,
 ):
     """Build the submit tool + matching PostToolUse hook.
 
@@ -88,6 +93,77 @@ def make(
         "signer_bounced": False,  # we bounced once for diverging from signer's sig
     }
 
+    # Region-scoped accepted submissions (Rust translations of
+    # block-range pieces of the target fn, validated against just
+    # that region's flow). Persisted to the sidecar so visualisers
+    # can map binary regions to recovered Rust on a later pass.
+    captured["regions"] = []
+
+    @tool("submit_region",
+          "Persist an ACCEPTED region-level Rust translation. Call "
+          "this ONLY after a `check_region` returned `perfect=True` "
+          "(or with `binary_over` warnings only) - the harness re-"
+          "runs `check_region` and rejects unverified submissions. "
+          "Each accepted snippet is recorded under "
+          "`flower.regions[<addr>] = [{block_start, block_end, "
+          "source, score, note}, ...]` in the cross-stage sidecar "
+          "for visualization later.",
+          {"source": str, "block_start": int, "block_end": int,
+           "note": str})
+    async def submit_region(args):
+        src = (args.get("source") or "").strip()
+        bs = int(args.get("block_start") or 0)
+        be = int(args.get("block_end") or 0)
+        note = (args.get("note") or "").strip()
+        if not src or be <= bs:
+            return {"content": [{"type": "text",
+                                 "text": "error: empty source or invalid range"}]}
+        # Re-validate before persisting. If consistency_module wasn't
+        # threaded through (legacy callers), skip the re-check and
+        # trust the agent's prior `check_region` call.
+        score = 1.0
+        feedback = "(no re-check; consistency_module not bound)"
+        if consistency_module is not None and bv is not None:
+            full = "\n".join(p for p in (prelude or "", src) if p).strip()
+            try:
+                r = consistency_module.check(
+                    full, bv=bv, fn_addr=fn_addr,
+                    rust_fn_name=rust_fn_name, region=(bs, be))
+                score = 1.0 if r.perfect else 0.0
+                feedback = r.feedback
+            except Exception as e:
+                return {"content": [{"type": "text",
+                                     "text": f"error: re-check raised {type(e).__name__}: {e}"}]}
+            if not r.perfect:
+                return {"content": [{"type": "text", "text":
+                    f"region [{bs},{be}) NOT accepted: re-check failed.\n{feedback}"
+                }]}
+        captured["regions"].append({
+            "block_start": bs,
+            "block_end": be,
+            "source": src,
+            "score": score,
+            "note": note,
+        })
+        # Mirror to the cross-stage sidecar immediately.
+        if apply_ctx is not None and apply_ctx.recoveries is not None:
+            try:
+                entry = apply_ctx.recoveries.get(apply_ctx.fn_addr, "flower") or {}
+                regions = list(entry.get("regions") or [])
+                regions.append({
+                    "block_start": bs, "block_end": be,
+                    "source": src, "score": score, "note": note,
+                })
+                apply_ctx.recoveries.update(
+                    apply_ctx.fn_addr, "flower", regions=regions,
+                )
+            except Exception as e:
+                print(f"[flower] submit_region sidecar write failed: "
+                      f"{type(e).__name__}: {e}", flush=True)
+        return {"content": [{"type": "text", "text":
+            f"region [{bs},{be}) accepted ({len(src)}B)"
+        }]}
+
     @tool("submit_reconstruction",
           "Submit your final Rust reconstruction of the target function. "
           "`source` is one Rust source string containing every needed "
@@ -113,7 +189,7 @@ def make(
                                      f"(confidence={captured['confidence']:.2f})"}]}
 
     if validator is None:
-        return [submit_reconstruction], captured, None
+        return [submit_region, submit_reconstruction], captured, None
 
     qualified = f"mcp__{server_name}__submit_reconstruction"
 
@@ -370,7 +446,7 @@ def make(
         }
 
     matcher = HookMatcher(matcher=qualified, hooks=[post_submit_hook])
-    return [submit_reconstruction], captured, matcher
+    return [submit_region, submit_reconstruction], captured, matcher
 
 
 NAMES = frozenset({"submit_reconstruction"})
