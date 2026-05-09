@@ -1,32 +1,18 @@
-# Terminal submit tool for the signer agent + a PostToolUse hook that
-# validates each submission via `validator(decl)` and bounces it back
-# to the agent (with the validation feedback) for up to `max_rounds`
-# iterations. After max_rounds the latest submission stands as final
-# even if it didn't validate.
+# Submit tool + PostToolUse validator-bounce hook for the signer agent.
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable
+from typing import Any, Callable
 
 from claude_agent_sdk import tool, HookMatcher
 
 
-# A validator returns (perfect, feedback, has_warnings, arity_only).
-#   perfect:      True iff every slot + sret + return + arity all agree.
-#   feedback:     verbatim rejection reason if not perfect.
-#   has_warnings: soft cheese signals (offset-named, skip-arrays, etc.)
-#                 - triggers the free first scold even on perfect=True.
-#   arity_only:   not perfect but the only mismatch is missing-reg arity
-#                 (binary optimized away a small bool/u8 arg). Treat
-#                 like perfect for hook purposes - DON'T bounce the
-#                 agent, since the SYSTEM tells them to keep the larger
-#                 sig and asking to "refine" would push them to drop
-#                 the real arg.
+# (perfect, feedback, has_warnings, arity_only, score in [0,1])
 Validator = Callable[[str], tuple[bool, str, bool, bool, float]]
-# score in [0, 1]: 1.0 = perfect, lower = partial. Used by the
-# accept-on-max-rounds branch to gate the bv-side apply on quality
-# (Bug 4: prior runs accepted score=0.67/0.80 partial recoveries
-# even at max_rounds, polluting downstream stages with bad types).
 APPLY_SCORE_THRESHOLD = 0.85
+
+
+def _txt(msg: str) -> dict:
+    return {"content": [{"type": "text", "text": msg}]}
 
 
 def make(
@@ -39,31 +25,12 @@ def make(
     force_iterate_first: bool = True,
     apply_ctx: Any = None,
 ):
-    """Build the submit tool + matching PostToolUse hook.
-
-    Returns `(tools, captured, hook_matcher)`.
-      tools         - list of @tool callables to register on the agent
-      captured      - dict the harness reads after the loop ends
-                      (decl, confidence, rationale, attempts)
-      hook_matcher  - None if `validator is None`, else a HookMatcher
-                      bound to the submit tool that auto-replies with
-                      validator feedback for up to `max_rounds` retries.
-
-    The submit tool always succeeds on its own - the hook is what
-    decides whether the agent gets to stop or has to refine.
-    """
-    captured = {
-        "types": "",
-        "signature": "",
-        "name": "",          # agent-chosen Rust symbol; empty = keep existing
-        "decl": "",          # joined types + signature, for downstream consumers
-        "confidence": 0.0,
-        "rationale": "",
-        "attempts": 0,
-        "validations": [],   # list of (decl, perfect, feedback) per round
-        "exhausted": False,  # set True if max_rounds was hit without a perfect submit
-        "scolded": False,    # True once we've sent the free antipattern warning
-        "applied": "",       # status of the post-accept bndb write-back (apply_ctx)
+    """Returns `(tools, captured, hook_matcher_or_None)`."""
+    captured: dict = {
+        "types": "", "signature": "", "name": "", "decl": "",
+        "confidence": 0.0, "rationale": "",
+        "attempts": 0, "validations": [],
+        "exhausted": False, "scolded": False, "applied": "",
     }
 
     @tool("submit_signature",
@@ -82,17 +49,14 @@ def make(
     async def submit_signature(args):
         types = (args.get("types") or "").strip()
         sig = (args.get("signature") or "").strip()
-        name = (args.get("name") or "").strip()
-        decl = f"{types}\n\n{sig}" if types else sig
         captured["types"] = types
         captured["signature"] = sig
-        captured["name"] = name
-        captured["decl"] = decl   # joined, for back-compat with downstream code
+        captured["name"] = (args.get("name") or "").strip()
+        captured["decl"] = f"{types}\n\n{sig}" if types else sig
         captured["confidence"] = float(args.get("confidence", 0.0))
         captured["rationale"] = args.get("rationale", "")
-        return {"content": [{"type": "text",
-                             "text": f"submitted: signature={sig!r} "
-                                     f"(confidence={captured['confidence']:.2f})"}]}
+        return _txt(f"submitted: signature={sig!r} "
+                    f"(confidence={captured['confidence']:.2f})")
 
     if validator is None:
         return [submit_signature], captured, None
@@ -112,30 +76,22 @@ def make(
         """
         if apply_ctx is None or not sig.strip():
             return "skip: no apply_ctx" if apply_ctx is None else "skip: empty sig"
-        # Persist to the cross-stage sidecar UNCONDITIONALLY now that we
-        # have a validated Rust sig. Downstream stages (flower) only
-        # need the Rust signature, not the C-side bv mutation; gating
-        # this write on the bv apply (nacre's c_signature, parse_type_
-        # string, fn.type=...) used to drop ~50% of recoveries because
-        # nacre fails to emit C for stdlib types like `Box<[u8]>` and
-        # `&str -> String`.
+        # Sidecar write is unconditional and FIRST: nacre often fails
+        # on stdlib types (Box<[u8]>, &str -> String), and downstream
+        # stages only need the Rust sig, not the bv-applied C decl.
         if apply_ctx.recoveries is not None:
             try:
                 fn_now = apply_ctx.target_func()
-                cur_name = fn_now.name if fn_now else ""
                 apply_ctx.recoveries.update(
                     apply_ctx.fn_addr, "signer",
-                    rust_types=types,
-                    rust_signature=sig,
-                    name=agent_name or cur_name,
-                )
+                    rust_types=types, rust_signature=sig,
+                    name=agent_name or (fn_now.name if fn_now else ""))
             except Exception as e:
-                # Don't let a sidecar hiccup mask the bv-apply outcome.
                 print(f"[signer] recoveries.update failed @ "
                       f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
                       flush=True)
         try:
-            import nacre  # heavy first-import (rustc driver); cached after
+            import nacre
         except Exception as e:
             return f"skip: nacre import: {type(e).__name__}: {e}"
         try:
@@ -150,18 +106,11 @@ def make(
         fn = apply_ctx.target_func()
         if fn is None:
             return f"skip: no fn at {apply_ctx.fn_addr:#x}"
-        # Honor the agent's optional `name` arg before applying the
-        # prototype, so the C decl binds to the chosen symbol. Empty
-        # string keeps the existing function name.
-        renamed = ""
-        if agent_name and agent_name != fn.name:
-            renamed = f" (renamed: {fn.name!r} -> {agent_name!r})"
-        # nacre emits the prototype as `... f(...)` - patch in the real
-        # function symbol so binja's parser binds the type to this fn.
-        fn_name = agent_name or fn.name
-        named_decl = c_decl.replace(" f(", f" {fn_name}(", 1)
-        # parse_*_string is sync (the binja API). Lock + transact around
-        # the whole sequence so a partial apply rolls back cleanly.
+        renamed = (f" (renamed: {fn.name!r} -> {agent_name!r})"
+                   if agent_name and agent_name != fn.name else "")
+        # nacre emits `... f(...)`; patch in the real symbol so binja's
+        # type-parser binds to this fn.
+        named_decl = c_decl.replace(" f(", f" {agent_name or fn.name}(", 1)
         try:
             import binaryninja as bn
         except Exception as e:
@@ -182,12 +131,10 @@ def make(
                     fn.reanalyze(bn.FunctionUpdateType.UserFunctionUpdate)
             except Exception as e:
                 return f"err: apply: {type(e).__name__}: {e}"
-        # Sidecar already written before nacre/bv mutations.
         return f"ok: proto + {len(defined)} type(s){renamed}"
 
     def _post_first_blurb() -> str:
-        """Built-in context the agent gets after its first submission:
-        the full asm dumped to a file (greppable via Bash), plus the
+        """Forced context after attempt 1: full asm path + full HLIL
         whole HLIL inlined. Surfaces both forcefully so the agent can
         cross-reference its draft types against ground-truth callees +
         decompilation without spending tool calls."""
@@ -236,29 +183,23 @@ def make(
         attempt = captured["attempts"]
         captured["validations"].append((decl, perfect, feedback))
 
-        # Cheese / offset-named-fields warnings count as REJECTION now
-        # (no free pass). Layout matched but the struct papers over real
-        # fields - the agent must refine. Counts toward the submit budget;
-        # the bounce loop iterates up to max_rounds.
+        async def _accept_or_reject() -> str:
+            if score >= APPLY_SCORE_THRESHOLD:
+                return await _apply_to_bv(types, sig, agent_name)
+            return f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+
+        # Cheese warnings: bounce until max_rounds, then accept-or-reject.
         if has_warnings:
             if attempt >= max_rounds:
                 captured["exhausted"] = True
-                if score >= APPLY_SCORE_THRESHOLD:
-                    captured["applied"] = await _apply_to_bv(types, sig, agent_name)
-                else:
-                    captured["applied"] = (
-                        f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
-                    )
-                return {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PostToolUse",
-                        "additionalContext": (
-                            f"Quality warning persisted across "
-                            f"{max_rounds} attempts; budget exhausted, "
-                            f"submission accepted as final."
-                        ),
-                    }
-                }
+                captured["applied"] = await _accept_or_reject()
+                return {"hookSpecificOutput": {
+                    "hookEventName": "PostToolUse",
+                    "additionalContext": (
+                        f"Quality warning persisted across {max_rounds} "
+                        f"attempts; budget exhausted, accepted as final."
+                    ),
+                }}
             return {
                 "decision": "block",
                 "reason": (
@@ -280,11 +221,8 @@ def make(
                 ),
             }
 
-        # Force-iterate: a non-warning, non-arity, perfect first submit
-        # is suspicious - the agent often submits a low-confidence guess
-        # just to unlock the wide-tool gate. Bounce the FIRST submit even
-        # when it validates clean, with a "now refine if you can" prompt;
-        # the second submit either confirms or improves it.
+        # Bounce attempt-1 perfect submits when force_iterate_first
+        # is on - first guesses are often unverified.
         if force_iterate_first and perfect and attempt == 1 and not arity_only:
             return {
                 "decision": "block",
@@ -305,55 +243,28 @@ def make(
             captured["applied"] = await _apply_to_bv(types, sig, agent_name)
             return {}
         if arity_only:
-            # Arity-only mismatch: binary doesn't observe one of the
-            # arg regs (typical for a `bool`/`u8` whose use the optimizer
-            # folded into one instruction). The SYSTEM tells the agent to
-            # keep the larger sig; bouncing here would push them to drop a
-            # real arg. Accept as final iff score >= threshold.
-            if score >= APPLY_SCORE_THRESHOLD:
-                captured["applied"] = await _apply_to_bv(types, sig, agent_name)
-            else:
-                captured["applied"] = (
-                    f"reject: arity-only score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
-                )
-            return {
-                "hookSpecificOutput": {
-                    "hookEventName": "PostToolUse",
-                    "additionalContext": (
-                        "Submission accepted with arity-trap (one or more "
-                        "expected arg regs aren't observed in the binary - "
-                        "likely a bool/u8 the optimizer folded). "
-                        "final_perfect will be False but the recorded sig "
-                        "matches the source's intent."
-                    ),
-                }
-            }
+            # Missing-arg-reg arity (optimizer folded a bool/u8 use)
+            # is acceptable; SYSTEM says keep the larger sig.
+            captured["applied"] = await _accept_or_reject()
+            return {"hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": (
+                    "Accepted with arity-trap (a u8/bool arg reg isn't "
+                    "observed in the binary, likely optimizer-folded). "
+                    "final_perfect=False but recorded sig matches intent."
+                ),
+            }}
         if attempt >= max_rounds:
-            # Out of rounds: only commit to the bv + sidecar if the
-            # final submission cleared the quality threshold. Below
-            # APPLY_SCORE_THRESHOLD we mark the run as failed and skip
-            # the apply - the bv keeps its existing types (better than
-            # a wrong recovery downstream).
             captured["exhausted"] = True
-            if score >= APPLY_SCORE_THRESHOLD:
-                captured["applied"] = await _apply_to_bv(types, sig, agent_name)
-            else:
-                captured["applied"] = (
-                    f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
-                )
-            return {
-                "hookSpecificOutput": {
-                    "hookEventName": "PostToolUse",
-                    "additionalContext": (
-                        f"Validation failed on attempt {attempt} but the "
-                        f"max_rounds={max_rounds} budget is exhausted. "
-                        f"Submission accepted as final."
-                    ),
-                }
-            }
-        # Bounce: reject the submit and feed the model back the validation
-        # output as the rejection reason. The agent will get this as a
-        # tool-failure surface and is expected to refine + submit again.
+            captured["applied"] = await _accept_or_reject()
+            return {"hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": (
+                    f"Validation failed on attempt {attempt}; "
+                    f"max_rounds={max_rounds} exhausted, accepted as final."
+                ),
+            }}
+        # Bounce + feed back validator output.
         return {
             "decision": "block",
             "reason": (
