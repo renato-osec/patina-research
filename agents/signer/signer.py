@@ -236,6 +236,7 @@ async def sign_function(
     # `SIGNER_FORCE_ITERATE_FIRST=1` to opt back in.
     no_force_iter = (os.environ.get("SIGNER_NO_FORCE_ITERATE") == "1"
                      or os.environ.get("SIGNER_FORCE_ITERATE_FIRST") != "1")
+    stderr_buf: list[str] = []
     no_gate = os.environ.get("SIGNER_NO_GATE") == "1"
 
     submit_tools, captured, submit_hook = t_submit.make(
@@ -397,6 +398,7 @@ async def sign_function(
         # spawn when the API rejects it. Opt in via PATINA_TASK_BUDGET=N.
         task_budget_tokens=int(os.environ.get("PATINA_TASK_BUDGET", "0")),
         agents={"context": context_subagent, "destructor": destructor_subagent},
+        stderr_buf=stderr_buf,
     )._build_options(env=CLI_ENV_SCRUB)
 
     stream = query(prompt=user_prompt, options=opts)
@@ -407,6 +409,12 @@ async def sign_function(
     finally:
         if owns_ctx:
             ctx.close()
+    # On any transport error, dump the captured CLI stderr - the SDK's
+    # "exit code 1" message hides what actually went wrong inside the
+    # claude CLI subprocess (OOM, parse error, oversize completion).
+    if rec.transport_error and stderr_buf:
+        tail = "".join(stderr_buf)[-4000:]
+        print(f"[{name}] cli stderr (last 4KB):\n{tail}", flush=True)
 
     rec.submitted_decl = captured["decl"]
     rec.submitted_types = captured.get("types", "")

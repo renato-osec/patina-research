@@ -30,6 +30,13 @@ class Agent:
     # builtin. Maps name -> AgentDefinition. Whitelist "Task" or
     # "Agent" in `allowed_builtins` to expose the spawn capability.
     agents: dict[str, AgentDefinition] = field(default_factory=dict)
+    # Optional per-call stderr capture buffer. SDK only pipes claude
+    # CLI stderr when a callback is registered; otherwise it inherits
+    # parent stderr and the "Command failed with exit code 1" crashes
+    # we keep seeing emit useful diagnostics that get lost. When set,
+    # every line of stderr goes here so the harness can dump it on
+    # transport_error.
+    stderr_buf: list[str] | None = None
     # API-side total-token budget. The model is told its remaining
     # budget mid-run so it paces tool use and wraps up before the
     # limit. Caps run-away iter-cap-exhaust runs (the model rambling
@@ -48,6 +55,8 @@ class Agent:
 
         budget = overrides.pop("task_budget_tokens", self.task_budget_tokens)
         task_budget = {"total": int(budget)} if budget else None
+        stderr_buf = overrides.pop("stderr_buf", self.stderr_buf)
+        stderr_cb = (lambda s: stderr_buf.append(s)) if stderr_buf is not None else None
         return ClaudeAgentOptions(
             system_prompt=self.system_prompt,
             allowed_tools=allowed,
@@ -61,6 +70,7 @@ class Agent:
             skills=[],
             agents=self.agents or None,
             task_budget=task_budget,
+            stderr=stderr_cb,
             **overrides,
         )
 
