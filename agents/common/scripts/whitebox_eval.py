@@ -2,10 +2,19 @@
 """Score a chain run against the symbolic source.rs ground truth.
 
 Usage:
-    whitebox_eval.py <run-dir> <source.rs>
-        run-dir: e.g. samples/runs/hl-node2/2026-05-09T1730/
-                 (must contain signer/signer.json, flower/flower.json)
-        source.rs: ground-truth Rust the binary was compiled from.
+    whitebox_eval.py <run-dir> <source.rs> [--symbolic <path>]
+
+Args:
+    run-dir:   e.g. samples/runs/hl-node2/2026-05-09T1730/
+               (must contain signer/signer.json, flower/flower.json)
+    source.rs: ground-truth Rust the binary was compiled from.
+    --symbolic <path>: optional path to the SYMBOLIC binary (with
+               debug symbols). Used to map each result's address to
+               its ORIGINAL pre-rename mangled symbol. This anchors
+               the ground-truth match on the binary location, so an
+               agent rename like `jump -> hashmap_index_key` doesn't
+               break the GT compare. Falls back to the post-rename
+               name from signer/flower JSON when not provided.
 
 Per-fn metrics (each in [0, 1]):
     sig_arity_match:  recovered arg-count == ground truth?
@@ -14,8 +23,6 @@ Per-fn metrics (each in [0, 1]):
     body_real:        flower's body has > 2 meaningful statements (not a stub)?
 
 Outputs a single JSON to stdout summarising every fn the run touched.
-Run with PATH including a python that has lymph + binja (only needed
-for ground-truth fn extraction; no binary load).
 """
 from __future__ import annotations
 import json
@@ -196,15 +203,51 @@ def _score_fn(fn_name: str, signer_decl: str, flower_source: str,
     return out
 
 
+def _addr_to_orig_name(symbolic_binary: Path) -> dict[int, str]:
+    """Build addr -> mangled-symbol map from the SYMBOLIC binary so we
+    can look up the original (pre-rename) name by address. Imports
+    binja lazily; returns empty dict if anything fails."""
+    try:
+        import binaryninja as bn
+    except Exception:
+        return {}
+    try:
+        bv = bn.load(str(symbolic_binary))
+        bv.update_analysis_and_wait()
+    except Exception as e:
+        print(f"warn: load failed: {e}", file=sys.stderr)
+        return {}
+    out: dict[int, str] = {}
+    for f in bv.functions:
+        out[f.start] = (f.symbol.full_name if f.symbol
+                        else None) or f.name
+    try:
+        bv.file.close()
+    except Exception:
+        pass
+    return out
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 3:
+    args: list[str] = []
+    symbolic: Path | None = None
+    it = iter(argv[1:])
+    for a in it:
+        if a == "--symbolic":
+            symbolic = Path(next(it))
+        else:
+            args.append(a)
+    if len(args) != 2:
         print(__doc__, file=sys.stderr)
         return 2
-    run_dir, src_path = Path(argv[1]), Path(argv[2])
+    run_dir, src_path = Path(args[0]), Path(args[1])
     if not run_dir.is_dir() or not src_path.is_file():
         print(f"missing: run_dir={run_dir}, source={src_path}", file=sys.stderr)
         return 2
     gt = _gt_fns(src_path.read_text(encoding="utf-8"))
+    addr_map: dict[int, str] = {}
+    if symbolic and symbolic.is_file():
+        addr_map = _addr_to_orig_name(symbolic)
     signer_results: list[dict] = []
     flower_results: list[dict] = []
     sj = run_dir / "signer" / "signer.json"
@@ -218,8 +261,18 @@ def main(argv: list[str]) -> int:
     for sr in signer_results:
         n = sr["name"]
         fr = flower_by_name.get(n, {})
+        # Anchor on original pre-rename name when symbolic binary given.
+        anchor = n
+        addr_str = sr.get("address") or ""
+        if addr_map and addr_str:
+            try:
+                addr = int(addr_str, 16) if addr_str.startswith("0x") else int(addr_str)
+                if orig := addr_map.get(addr):
+                    anchor = orig
+            except Exception:
+                pass
         rows.append(_score_fn(
-            n, sr.get("submitted_decl") or "",
+            anchor, sr.get("submitted_decl") or "",
             fr.get("submitted_source") or "", gt,
         ))
     # Aggregate signals.
