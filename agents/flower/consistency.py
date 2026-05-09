@@ -43,37 +43,67 @@ def _bad_inner_allow(source: str) -> list[str]:
 
 def _is_trivial_body(rust_source: str, rust_fn_name: str,
                     bin_block_count: int) -> tuple[bool, str]:
-    """Detect Bug 6: agent submitted a stub body (`let _ = (...)` or
-    similar single-stmt no-op) for a binary fn that's clearly non-
-    trivial. Heuristic: extract fn body, count meaningful (non-blank,
-    non-comment) lines; if <= 2 and binary has > 4 basic blocks,
-    flag it."""
+    """Detect cheese bodies that pass the validator without actually
+    reconstructing the function. Two patterns:
+
+      1. Empty body: `fn foo(...) {}` for a fn with > 4 basic blocks.
+
+      2. `let _ = X` ratio: agent binds HLIL var names with `let _`
+         (which dataflow ignores) so the binding check passes but no
+         meaningful flow is reconstructed. If half-or-more of the fn
+         body's statements are `let _ = ...`, it's binding theater.
+
+    Both patterns make dataflow trivially compatible (no flow to
+    compare) and return a reconstruction with zero real semantics.
+    """
     import re
-    # Match the named fn body.
     m = re.search(r"\bfn\s+" + re.escape(rust_fn_name)
                   + r"\s*[^{]*\{(.*)\}", rust_source, re.DOTALL)
     if not m:
         return False, ""
     body = m.group(1).strip()
-    # Strip leading/trailing braces if multi-stmt blocks crept in.
-    # Count meaningful statements: split by `;` and `{`/`}` (rough).
-    # If body collapses to "let _ = (...)" plus optional return, it's a stub.
     stmts = [s.strip() for s in body.split(";") if s.strip()]
     stmts = [s for s in stmts if not s.startswith("//")]
-    is_let_underscore_stub = all(
-        s.startswith("let _") or s in ("()", "0", "")
-        for s in stmts
-    ) if stmts else True
-    if not is_let_underscore_stub or bin_block_count <= 4:
-        return False, ""
-    meaningful = stmts
-    return True, (
-        f"submission rejected: fn body has only {len(meaningful)} "
-        f"meaningful line(s) but the binary has {bin_block_count} "
-        f"basic blocks. A stub like `let _ = (...)` papers over the "
-        f"actual logic - dataflow trivially passes when there's no "
-        f"flow. Reconstruct the real body."
+    if not stmts and bin_block_count > 4:
+        return True, (
+            f"submission rejected: empty fn body but the binary has "
+            f"{bin_block_count} basic blocks. Reconstruct the actual "
+            f"logic."
+        )
+    # Multi-arg `let _ = (X, Y, Z, ...)` is the load-bearing cheese:
+    # the agent dumps several args (or HLIL-bound locals) into a
+    # single underscore so the binding check counts them as "used"
+    # while dataflow sees no flow. Reject any tuple with >= 2 idents.
+    multi_underscore_re = re.compile(
+        r"let\s+_\s*(?::\s*[^=]+)?=\s*\(\s*([A-Za-z_][\w]*\s*"
+        r"(?:,\s*[A-Za-z_][\w]*\s*){1,})\)\s*"
     )
+    bad_tuples: list[str] = []
+    for m in multi_underscore_re.finditer(body):
+        idents = [s.strip() for s in m.group(1).split(",") if s.strip()]
+        if len(idents) >= 2:
+            bad_tuples.append("(" + ", ".join(idents) + ")")
+    if bad_tuples and bin_block_count > 4:
+        return True, (
+            f"submission rejected: {len(bad_tuples)} multi-arg "
+            f"`let _ = (X, Y, ...)` discard(s) detected: "
+            f"{'; '.join(bad_tuples[:3])}. That binds the HLIL var "
+            f"names without using them - dataflow trivially passes "
+            f"because nothing flows. Use those vars in real "
+            f"computation; if any are truly unused, drop them from "
+            f"the signature."
+        )
+    # Also catch high-density single `let _ =` binding theater.
+    let_underscore = sum(1 for s in stmts if s.startswith("let _"))
+    if (let_underscore >= max(3, len(stmts) // 3)
+            and bin_block_count > 4):
+        return True, (
+            f"submission rejected: {let_underscore}/{len(stmts)} "
+            f"statements are `let _ = ...`. That's binding theater - "
+            f"using HLIL var names without flowing them. Use the "
+            f"bound vars in real computation."
+        )
+    return False, ""
 
 
 @dataclass
