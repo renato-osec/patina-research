@@ -1,0 +1,22 @@
+[marinator] 8 targets, workers=8, model=sonnet
+[start] panic_assertion_failed @ 0x5555556c9760
+[start] panic_index_out_of_bounds @ 0x5555556c9896
+[start] panic_unwrap_err @ 0x5555556c9aa0
+[start] panic_overflow_sub @ 0x5555556c9e30
+[start] option_unit_qty_add_a @ 0x555556b5a850
+[done ] panic_overflow_sub  {"renamed_vars": 4, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0}  tools=6 iters=7 $0.146 t=140.9s
+[done ] panic_index_out_of_bounds  {"renamed_vars": 11, "renamed_funcs": 0, "retypes": 0, "prototype_set": 1, "comments": 0, "types_declared": 0}  tools=7 iters=8 $0.187 t=149.9s
+[done ] panic_assertion_failed  {"renamed_vars": 6, "renamed_funcs": 0, "retypes": 0, "prototype_set": 1, "comments": 0, "types_declared": 0}  tools=8 iters=9 $0.210 t=173.4s
+[done ] option_unit_qty_add_a  {"renamed_vars": 14, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0}  tools=9 iters=10 $0.486 t=1002.3s
+[done ] panic_unwrap_err  {"renamed_funcs": 1, "renamed_vars": 13, "retypes": 0, "prototype_set": 1, "comments": 0, "types_declared": 0}  tools=17 iters=18 $0.426 t=1023.8s
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] compute_margin_requirement_by_mode  {"renamed_vars": 9, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0}  tools=12 iters=13 $0.653 t=390.2s
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  {"renamed_vars": 15, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0, "notes": "Renamed all major unnamed locals in compute_user_margin_and_shortfall. Key wins: oracle_prices_len (bounds-check sentinel), position_buf (0xa0-byte AssetPosition stack copy), margin_compute_result (discriminant from compute_margin_requirement_by_mode), equity_delta_by_type (4-slot table for equity delta selection), and the full set of per-position OptionUnitQty storage bases and loaded values (pos_equity_option_qty, pos_margin_req_option_qty_base/val, pos_abs_ntl_option_qty/val, pos_abs_ntl_scalar_base, pos_margin_req_scalar_base, pos_equity_scalar_base, pos_raw_equity_option_qty/val). var_230 (skip_isolated_positions) and var_158 (pos_price_data) resisted all rename attempts - BN tracks them under a different SSA key not exposed via stack_vars."}  tools=16 iters=17 $0.626 t=354.4s
+[start] compute_account_value_for_direction @ 0x555556bb4d20
+[done ] compute_account_value_for_direction  {"renamed_vars": 16, "renamed_funcs": 0, "retypes": 0, "comments": 1, "types_declared": 0}  tools=12 iters=13 $0.658 t=380.7s
+[marinator] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain/warper/hl-node2.warped.patina.json
+[marinator] faulthandler armed -> outputs/chain/marinator/marinator.fault (fd=10); send SIGUSR1 to pid 862609 for live dump
+[marinator] analysis drained in 0.3s
+[marinator] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain/marinator/hl-node2.warped.marinated.bndb (5.9s)
+[marinator] done in 2149.2s, 0/8 perfect, 0 failed, 105,003 tokens, $3.393, output outputs/chain/marinator/marinator.json

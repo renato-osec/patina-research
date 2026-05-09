@@ -1,0 +1,63 @@
+{
+  "0x5555556c9760": {
+    "signer": {
+      "name": "panic_assertion_failed",
+      "rust_signature": "(msg: &str, location: &'static Location<'static>) -> !",
+      "rust_types": "use core::panic::Location;"
+    }
+  },
+  "0x5555556c9896": {
+    "flower": {
+      "name": "panic_index_out_of_bounds",
+      "source": "fn panic_index_out_of_bounds(index: usize, len: usize, _loc: &core::panic::Location) -> ! {\n    panic!(\"index out of bounds: the len is {len} but the index is {index}\")\n}"
+    },
+    "signer": {
+      "name": "panic_index_out_of_bounds",
+      "rust_signature": "(index: usize, len: usize, loc: &core::panic::Location) -> !",
+      "rust_types": ""
+    }
+  },
+  "0x5555556c9aa0": {
+    "flower": {
+      "name": "unwrap_failed",
+      "source": "use core::fmt;\nuse core::panic::Location;\n\n#[track_caller]\nfn unwrap_failed(_msg: &str, _error: &dyn fmt::Debug, _caller: &Location) -> ! {\n    panic!(\"{}: {:?}\", _msg, _error)\n}"
+    },
+    "signer": {
+      "name": "unwrap_failed",
+      "rust_signature": "(msg: &str, error: &dyn fmt::Debug, caller: &Location) -> !",
+      "rust_types": "use core::fmt;\nuse core::panic::Location;"
+    }
+  },
+  "0x5555556c9e30": {
+    "flower": {
+      "name": "panic_overflow_sub",
+      "source": "use core::panic::Location;\n\npub fn panic_overflow_sub(_loc: &'static Location<'static>) -> ! {\n    let pieces_ptr: *const &'static str = &\"attempt to subtract with overflow\";\n    let pieces_len: usize = 1;\n    let fmt_args_len: usize = 8;\n    let fmt_args_data: u128 = 0;\n    let _ = (pieces_len, fmt_args_len, fmt_args_data);\n    let rdi: *const *const &'static str = &pieces_ptr;\n    let fn_0x5555556c96f0: extern \"C\" fn(*const *const &'static str) = unsafe { core::mem::transmute(rdi) };\n    fn_0x5555556c96f0(rdi);\n    loop {}\n}"
+    },
+    "signer": {
+      "name": "panic_overflow_sub",
+      "rust_signature": "(_loc: &'static Location<'static>) -> !",
+      "rust_types": "use core::panic::Location;"
+    }
+  },
+  "0x555556b5a850": {
+    "signer": {
+      "name": "option_unit_qty_add_a",
+      "rust_signature": "(lhs: &OptionUnitQty, rhs: &OptionUnitQty) -> (u64, u64)",
+      "rust_types": "pub struct OptionUnitQty {\n    pub tag: u64,\n    pub unit: u64,\n    pub value: u64,\n}"
+    }
+  },
+  "0x555556b61a50": {
+    "signer": {
+      "name": "compute_margin_requirement_by_mode",
+      "rust_signature": "(this: &Position, oracle_px: &OraclePx) -> MarginRequirementResult",
+      "rust_types": "#[repr(C)]\npub struct MarginRequirementResult {\n    pub kind: u64,\n    pub price_lo: u64,\n    pub price_hi: u64,\n    pub notional_lo: u64,\n    pub notional_hi: u64,\n    pub size_lo: u64,\n    pub size_hi: u64,\n    pub mark_lo: u64,\n    pub mark_hi: u64,\n    pub margin_type: u64,\n    pub margin_req: u64,\n    pub margin_addl: u64,\n    pub abs_notional_lo: u64,\n    pub abs_notional_hi: u64,\n    pub flags: u64,\n}\n\n#[repr(C)]\npub struct MarginSpec {\n    pub margin_type: u64,\n    pub margin_req: u64,\n    pub margin_addl: u64,\n}\n\n#[repr(C)]\npub struct Position {\n    pub asset_id: u64,\n    pub side: u64,\n    pub szi: i64,\n    pub mid: [u8; 0x60],\n    pub margin: MarginSpec,\n    pub max_leverage_alt: u64,\n    pub max_leverage: u8,\n    pub tail: [u8; 0x8],\n}\n\n#[repr(C)]\npub struct OraclePx {\n    pub px_lo: u64,\n    pub px_hi: u64,\n    pub timestamp: u64,\n    pub mark: i64,\n}"
+    }
+  },
+  "0x555556bb4fb0": {
+    "signer": {
+      "name": "compute_user_margin_and_shortfall",
+      "rust_signature": "(account: &AccountState, prices: &Vec<u64>) -> MarginResult",
+      "rust_types": "pub struct UnitQty { pub unit: u64, pub qty: i64 }\npub struct AssetPosition { pub coin: u64, pub size: i64, pub entry_px: u64 }\n\npub struct AccountState {\n    pub equity: Option<UnitQty>,\n    pub isolated_equity: Option<UnitQty>,\n    pub positions: std::collections::BTreeMap<u64, AssetPosition>,\n}\n\npub struct MarginResult {\n    pub total_equity: Option<UnitQty>,\n    pub margin_req: Option<UnitQty>,\n    pub abs_notional: Option<UnitQty>,\n    pub raw_equity: Option<UnitQty>,\n}"
+    }
+  }
+}

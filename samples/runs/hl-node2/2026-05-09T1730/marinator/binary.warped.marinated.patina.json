@@ -1,0 +1,30 @@
+{
+  "0x409f10": {
+    "signer": {
+      "name": "compose_hangul_syllables",
+      "rust_signature": "(leading: char, trailing: char) -> String",
+      "rust_types": ""
+    }
+  },
+  "0x40b200": {
+    "signer": {
+      "name": "j_free",
+      "rust_signature": "()",
+      "rust_types": ""
+    }
+  },
+  "0x43b3d7": {
+    "signer": {
+      "name": "drop",
+      "rust_signature": "()",
+      "rust_types": ""
+    }
+  },
+  "0x43b3ff": {
+    "signer": {
+      "name": "drop",
+      "rust_signature": "(this: &mut Box<[u8]>)",
+      "rust_types": ""
+    }
+  }
+}

@@ -1,0 +1,26 @@
+[flower] 8 targets, workers=8, model=opus
+[start] panic_assertion_failed @ 0x5555556c9760
+[start] panic_index_out_of_bounds @ 0x5555556c9896
+[start] core::result::unwrap_failed @ 0x5555556c9aa0
+[start] panic_overflow_sub @ 0x5555556c9e30
+[start] option_unit_qty_add_a @ 0x555556b5a850
+[done ] panic_index_out_of_bounds  [OK]  source='fn panic_index_out_of_bounds(index: usize, len: usize, _loc: &core::panic::Location) -> ! {\n    panic!("index out of bou'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=13 iters=14 $0.406 t=83.4s
+[done ] core::result::unwrap_failed  [OK]  source='use core::fmt;\nuse core::panic::Location;\n\n#[track_caller]\nfn unwrap_failed(_msg: &str, _error: &dyn fmt::Debug, _caller'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=12 iters=13 $0.390 t=87.4s
+[done ] panic_assertion_failed  [FAILED]  source='#![feature(fmt_internals)]\n\nuse core::panic::Location;\n\nextern "Rust" {\n    fn panic_fmt_loc(fmt: core::fmt::Arguments<\''  final_score=0.00  perfect=False  exhausted=True  submits=3  tools=15 iters=16 $0.714 t=170.3s
+[done ] panic_overflow_sub  [OK]  source="use core::panic::Location;\n\npub fn panic_overflow_sub(_loc: &'static Location<'static>) -> ! {\n    let pieces_ptr: *cons"  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=19 iters=20 $0.996 t=263.9s
+[done ] option_unit_qty_add_a  [imperfect]  source=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=28 iters=17 $1.182 t=301.4s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] compute_margin_requirement_by_mode  [imperfect]  source='#[repr(C)]\npub struct MarginRequirementResult {\n    pub kind: u64,\n    pub price_lo: u64,\n    pub price_hi: u64,\n    pub'  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=16 iters=17 $1.140 t=215.5s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  [FAILED]  source='use std::collections::BTreeMap;\n\npub struct UnitQty { pub unit: u64, pub qty: i64 }\npub struct AssetPosition { pub coin:'  final_score=1.00  perfect=False  exhausted=True  submits=3  tools=17 iters=18 $2.017 t=526.2s
+[start] compute_account_value_for_direction @ 0x555556bb4d20
+[done ] compute_account_value_for_direction  [FAILED]  source='#![allow(dead_code)]\n#![allow(non_snake_case)]\n\n#[repr(C)]\npub struct Out { pub a: u64, pub b: u64, pub c: i64 }\n\n#[repr'  final_score=0.00  perfect=False  exhausted=True  submits=3  tools=19 iters=20 $1.063 t=254.4s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain/flower/flower.fault (fd=12); send SIGUSR1 to pid 862609 for live dump
+[flower] analysis drained in 15.6s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain/flower/hl-node2.warped.marinated.signed.flowered.bndb (2.5s)
+[flower] done in 1297.8s, 3/8 perfect, 3 failed, 144,142 tokens, $7.907, output outputs/chain/flower/flower.json
