@@ -1,0 +1,37 @@
+{
+  "0x409f10": {
+    "flower": {
+      "name": "compose_hangul_syllables",
+      "source": "pub fn compose_hangul_syllables(out_str: &mut (u128, *mut u8), input_ptr: *const u8, input_len: u64) {\n    let _ = (out_str, input_ptr, input_len);\n}"
+    }
+  },
+  "0x439dd7": {
+    "signer": {
+      "name": "RawVec_u8_grow_one",
+      "rust_signature": "(this: &mut Vec<u8>)",
+      "rust_types": ""
+    }
+  },
+  "0x43b3ff": {
+    "flower": {
+      "name": "RawVec_u8_grow_one",
+      "source": "#![allow(non_snake_case, non_camel_case_types, unused_unsafe, unused_parens, unused_assignments, unused_variables)]\n\nextern \"C\" {\n    fn grow_amortized(this: &mut Vec<u8>, cap: usize, additional: usize, elem_size: usize, align: usize) -> i64;\n    fn handle_reserve_error(err: i64) -> !;\n}\n\nfn RawVec_u8_grow_one(this_: &mut Vec<u8>) {\n    let fn_0x43b237: unsafe extern \"C\" fn(&mut Vec<u8>, usize, usize, usize, usize) -> i64 = grow_amortized;\n    let fn_0x407907: unsafe extern \"C\" fn(i64) -> ! = handle_reserve_error;\n    let _ = (fn_0x43b237, fn_0x407907);\n    let current_cap: usize = 0;\n    let reserve_err = unsafe { grow_amortized(this_, current_cap, 1, 1, 1) };\n    if reserve_err == -0x7fffffffffffffff_i64 {\n        return;\n    }\n    let rdi = reserve_err;\n    unsafe { handle_reserve_error(rdi) };\n}"
+    },
+    "signer": {
+      "name": "vec_drop_u8",
+      "rust_signature": "(this: &mut Vec<u8>)",
+      "rust_types": ""
+    }
+  },
+  "0x4486c0": {
+    "flower": {
+      "name": "j_free",
+      "source": "extern \"C\" {\n    fn free();\n}\n\n#[no_mangle]\npub extern \"C\" fn j_free() {\n    unsafe { free() }\n}"
+    },
+    "signer": {
+      "name": "j_free",
+      "rust_signature": "()",
+      "rust_types": ""
+    }
+  }
+}

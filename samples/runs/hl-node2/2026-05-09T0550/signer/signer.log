@@ -1,0 +1,6 @@
+[signer] 8 targets, workers=8, model=opus
+[start] panic_assertion_failed @ 0x5555556c9760
+[start] panic_index_out_of_bounds @ 0x5555556c9896
+[start] core::result::unwrap_failed @ 0x5555556c9aa0
+[start] panic_overflow_sub @ 0x5555556c9e30
+[start] option_unit_qty_add_a @ 0x555556b5a850

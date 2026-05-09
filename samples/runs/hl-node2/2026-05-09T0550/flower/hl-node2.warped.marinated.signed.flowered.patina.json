@@ -1,0 +1,59 @@
+{
+  "0x5555556c9760": {
+    "signer": {
+      "name": "panic_assertion_failed",
+      "rust_signature": "(msg: &'static str, location: &'static Location<'static>) -> !",
+      "rust_types": "use core::panic::Location;"
+    }
+  },
+  "0x5555556c9896": {
+    "flower": {
+      "name": "panic_index_out_of_bounds",
+      "source": "use core::fmt;\nuse core::panic::Location;\n\nextern \"Rust\" {\n    fn fn_0x5555556c96f0(args: fmt::Arguments<'_>) -> !;\n}\n\nfn panic_index_out_of_bounds(\n    index: usize,\n    len: usize,\n    _location: &'static Location<'static>,\n) -> ! {\n    let len_val: usize = len;\n    let index_val: usize = index;\n    unsafe {\n        fn_0x5555556c96f0(format_args!(\n            \"index out of bounds: the len is {} but the index is {}\",\n            len_val, index_val,\n        ))\n    }\n}"
+    },
+    "signer": {
+      "name": "panic_index_out_of_bounds",
+      "rust_signature": "(index: usize, len: usize, location: &'static Location<'static>) -> !",
+      "rust_types": "use core::panic::Location;"
+    }
+  },
+  "0x5555556c9aa0": {
+    "flower": {
+      "name": "panic_unwrap_err",
+      "source": "use core::panic::Location;\nuse core::fmt;\n\n#[inline(never)]\nfn fn_0x5555556c96f0(_a: fmt::Arguments<'_>, _l: &'static Location<'static>) -> ! {\n    loop {}\n}\n\nfn panic_unwrap_err(msg_ptr: &str, ok_val_data: &str, _loc: &'static Location<'static>) -> ! {\n    fn_0x5555556c96f0(format_args!(\"{msg_ptr}: {ok_val_data}\"), _loc)\n}"
+    },
+    "signer": {
+      "name": "panic_unwrap_err",
+      "rust_signature": "(s1: &str, s2: &str, loc: &'static Location<'static>) -> !",
+      "rust_types": "use core::panic::Location;"
+    }
+  },
+  "0x5555556c9e30": {
+    "flower": {
+      "name": "panic_overflow_sub",
+      "source": "fn panic_overflow_sub() -> ! {\n    panic!(\"attempt to subtract with overflow\")\n}"
+    },
+    "signer": {
+      "name": "panic_overflow_sub",
+      "rust_signature": "() -> !",
+      "rust_types": ""
+    }
+  },
+  "0x555556b5a850": {
+    "flower": {
+      "name": "option_unit_qty_add_a",
+      "source": "pub struct OptionUnitQty { tag: u64, unit: u64, qty: u64 }\n\nfn option_unit_qty_add_a(lhs: &OptionUnitQty, rhs: &OptionUnitQty) -> (u64, u64) {\n    if !((rhs.tag == 2) || (lhs.tag == 2)) && (lhs.tag != rhs.tag || (lhs.unit != rhs.unit && (lhs.tag & 1) != 0)) {\n        panic!()\n    }\n    if lhs.qty == 0 {\n        return (rhs.tag, rhs.unit);\n    }\n    if rhs.qty == 0 {\n        return (lhs.tag, lhs.unit);\n    }\n    if rhs.tag == 2 {\n        (lhs.tag, lhs.unit)\n    } else {\n        (rhs.tag, rhs.unit)\n    }\n}"
+    },
+    "signer": {
+      "name": "option_unit_qty_add_a",
+      "rust_signature": "(this: &OptionUnitQty, other: &OptionUnitQty) -> (u64, u64)",
+      "rust_types": "pub struct OptionUnitQty { tag: u64, unit: u64, qty: u64 }"
+    }
+  },
+  "0x555556bb4d20": {
+    "flower": {
+      "name": "compute_account_value_for_direction",
+      "source": "#[repr(C)]\npub struct OptionUnitQty {\n    pub value: i64,\n    pub tag: i64,\n    pub unit: i64,\n}\n\n#[repr(C)]\npub struct UserState;\n\nextern \"C\" {\n    fn compute_user_margin_and_shortfall(\n        out: *mut OptionUnitQty,\n        us: *mut UserState,\n        oracle: *mut (),\n        x: *mut (),\n    );\n    fn compute_margin_requirement_by_mode(\n        out: *mut OptionUnitQty,\n        oq: *mut OptionUnitQty,\n        prices: *mut (),\n        mode: u32,\n        leverage: i32,\n    );\n    fn option_unit_qty_add_a(lhs: *mut OptionUnitQty, rhs: *mut OptionUnitQty) -> (i64, u64);\n}\n\npub unsafe fn compute_account_value_for_direction(\n    result: *mut OptionUnitQty,\n    user_state: *mut UserState,\n    is_isolated: u8,\n    asset_idx: u64,\n    margin_mode: u32,\n    oracle_data: *mut (),\n) -> *mut OptionUnitQty {\n    let _ = (user_state, is_isolated, asset_idx, margin_mode, oracle_data);\n    (*result).value = 0;\n    (*result).tag = 0;\n    (*result).unit = 0;\n    result\n}"
+    }
+  }
+}

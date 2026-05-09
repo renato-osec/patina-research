@@ -1,0 +1,28 @@
+[flower] 8 targets, workers=8, model=opus
+[start] panic_assertion_failed @ 0x5555556c9760
+[start] panic_index_out_of_bounds @ 0x5555556c9896
+[start] panic_unwrap_err @ 0x5555556c9aa0
+[start] panic_overflow_sub @ 0x5555556c9e30
+[start] option_unit_qty_add_a @ 0x555556b5a850
+[done ] panic_unwrap_err  [OK]  source="use core::panic::Location;\nuse core::fmt;\n\n#[inline(never)]\nfn fn_0x5555556c96f0(_a: fmt::Arguments<'_>, _l: &'static Lo"  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=13 iters=14 $0.429 t=111.9s
+[done ] panic_overflow_sub  [OK]  source='fn panic_overflow_sub() -> ! {\n    panic!("attempt to subtract with overflow")\n}'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=12 iters=13 $0.425 t=118.2s
+[done ] panic_index_out_of_bounds  [OK]  source='use core::fmt;\nuse core::panic::Location;\n\nextern "Rust" {\n    fn fn_0x5555556c96f0(args: fmt::Arguments<\'_>) -> !;\n}\n\nf'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=13 iters=14 $0.538 t=136.2s
+[done ] option_unit_qty_add_a  [OK]  source='pub struct OptionUnitQty { tag: u64, unit: u64, qty: u64 }\n\nfn option_unit_qty_add_a(lhs: &OptionUnitQty, rhs: &OptionUn'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=26 iters=27 $1.030 t=248.9s
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] panic_assertion_failed  [OK]  source="use core::panic::Location;\nuse core::fmt::Arguments;\n\n#[inline(never)]\nfn fn_0x5555556c96f0(_args: &Arguments<'_>, _loc:"  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=30 iters=17 $1.338 t=363.3s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[done ] compute_margin_requirement_by_mode  [imperfect]  source=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=20 iters=17 $0.959 t=222.2s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  [imperfect]  source='struct Clearinghouse;\nfn compute_user_margin_and_shortfall(_result: *mut u8, _ch: *const Clearinghouse, _user_state: *co'  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=23 iters=17 $1.949 t=483.2s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_account_value_for_direction @ 0x555556bb4d20
+[done ] compute_account_value_for_direction  [OK]  source='#[repr(C)]\npub struct OptionUnitQty {\n    pub value: i64,\n    pub tag: i64,\n    pub unit: i64,\n}\n\n#[repr(C)]\npub struct '  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=18 iters=19 $0.628 t=154.0s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain/flower/flower.fault (fd=12); send SIGUSR1 to pid 598745 for live dump
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain/flower/hl-node2.warped.marinated.signed.flowered.bndb (2.4s)
+[flower] done in 1108.5s, 6/8 perfect, 0 failed, 139,229 tokens, $7.296, output outputs/chain/flower/flower.json
