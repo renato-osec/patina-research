@@ -130,17 +130,9 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
             sidecar_path.unlink()
             print(f"[{name}] cleared sidecar: {sidecar_path}", flush=True)
 
-    # NB: do NOT call `bn._init_plugins()` here. It sets binja's
-    # IS_MAIN_THREAD_INITED flag (c6ea260 in libbinaryninjacore) AND
-    # registers a main_thread_id. Once the flag is set,
-    # BNExecuteOnMainThreadAndWait posts work to a queue and waits
-    # on a cv unless `pthread_self() == main_thread_id`. Anemone's
-    # Rust-side `binaryninja::headless::init()` (called lazily on
-    # first anemone.analyze) and asyncio shuffle threads enough that
-    # the registered main thread isn't always the one calling
-    # bv.create_database, deadlocking on `cv.wait` with no runner.
-    # Leaving the flag at 0 keeps BNExecuteOnMainThreadAndWait on
-    # the inline shortcut, which is what we want headless.
+    # Don't call bn._init_plugins() — it makes BNExecuteOnMainThread-
+    # AndWait queue work to a thread the inline path expects to be
+    # the caller, deadlocking with anemone's headless runner.
     print(f"[{name}] loading {bndb}", flush=True)
     bv = bn.load(str(bndb))
     if bv is None:
@@ -231,70 +223,37 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
             "results": results_dicts,
         }
         artifacts.out_json.write_text(json.dumps(summary, indent=2))
-        # Cross-stage sidecar BEFORE the bndb save (the latter has a
-        # known crash mode at teardown - sidecar is the durable store).
+        # Save the sidecar before the bndb (sidecar is the durable store).
         try:
             ctx.recoveries.save()
             log(f"[{name}] sidecar -> {ctx.recoveries.path}")
             artifacts.out_sidecar = ctx.recoveries.path
         except Exception as e:
             log(f"[{name}] sidecar save failed: {e}")
-        # Pre-save diagnostics: dump live threads / child procs / fds.
-        # Default off now that the BNCreateDatabase deadlock is fixed
-        # via `bn._init_plugins()` after load. Set
-        # `PATINA_SAVE_DIAGNOSTICS=1` to re-enable if save misbehaves.
         if os.environ.get("PATINA_SAVE_DIAGNOSTICS", "0") == "1":
             _dump_save_diagnostics(name, log)
-        # Arm faulthandler dumping to a *file* via an unbuffered fd:
-        # python's text-mode buffering swallows the dump on SIGSEGV
-        # abort, so we need a raw OS fd. Also write the same trace to
-        # stderr (free from buffering since faulthandler uses write(2)).
+        # faulthandler must use a raw fd; Python buffering swallows
+        # the dump on abort.
         import faulthandler
         fault_path = out_dir / f"{name}.fault"
         try:
-            # O_WRONLY|O_CREAT|O_TRUNC, mode 0644, fully unbuffered
-            # (faulthandler talks to the kernel via write(2), no
-            # Python-level buffer in the path).
             fault_fd = os.open(str(fault_path),
                                os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
             faulthandler.enable(file=fault_fd, all_threads=True)
-            # Also dump to stderr; this is harmless (just a duplicate)
-            # and saves us if the file write somehow fails.
             faulthandler.register(signal.SIGUSR1, file=fault_fd,
                                   all_threads=True, chain=False)
-            log(f"[{name}] faulthandler armed -> {fault_path} (fd={fault_fd}); "
-                f"send SIGUSR1 to pid {os.getpid()} for live dump")
+            log(f"[{name}] faulthandler armed -> {fault_path} (fd={fault_fd})")
         except Exception as e:
             log(f"[{name}] faulthandler arm failed: {e}")
-        # CRITICAL: drain binja's background analysis queue BEFORE save.
-        # Each agent's submit handler did `with bv.undoable_transaction():
-        # fn.comment = ...; fn.name = ...` (signer also does `f.reanalyze`),
-        # which schedules work on binja's C++ analysis worker pool (the
-        # ~25 OS threads /proc/self/task shows past the Python-visible
-        # ones). Calling create_database while those workers are mid-
-        # update on the same bv races their internal state and
-        # segfaults the process. update_analysis_and_wait blocks until
-        # the queue is empty; from there create_database is safe.
+        # Drain binja's analysis queue + drop pyo3 closures so
+        # create_database doesn't race their destructors.
         t_drain = time.time()
         bv.update_analysis_and_wait()
-        # Force GC so any dangling per-fn closures (anemone FlowGraphs
-        # cached inside the agent's tool registry) are released before
-        # save. Pyo3 destructors that touch the BV need to run while
-        # the bv is still in a quiescent state, not racing the save.
-        import gc
-        gc.collect()
-        # Drain a second time in case GC's pyo3 destructors poked the bv.
+        import gc; gc.collect()
         bv.update_analysis_and_wait()
         log(f"[{name}] analysis drained in {time.time()-t_drain:.1f}s")
-        # Unconditional pre-save thread snapshot. Even if libbinaryninjacore
-        # installs its own SIGSEGV handler that overrides faulthandler
-        # (the most likely reason the post-crash dump file stays empty),
-        # this dump fires successfully BEFORE create_database so we at
-        # least know what every Python-visible thread was doing at the
-        # moment we attempted the save.
         try:
-            import faulthandler as _fh
-            _fh.dump_traceback(file=fault_fd, all_threads=True)
+            faulthandler.dump_traceback(file=fault_fd, all_threads=True)
             os.write(fault_fd, b"\n--- pre-save snapshot complete ---\n")
         except Exception as e:
             log(f"[{name}] pre-save dump failed: {e}")
@@ -325,43 +284,37 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
 
 
 def _dump_save_diagnostics(name: str, log) -> None:
-    """Pre-save snapshot: live threads, child processes, open fds.
-    Helps bisect why `bv.create_database` hangs - the typical cause is
-    SDK / subprocess state lingering past the per-fn agent runs."""
+    """Pre-save snapshot: live threads, child processes, open fds."""
     import threading
     threads = threading.enumerate()
     log(f"[{name}] diag: {len(threads)} live threads:")
     for t in threads:
         log(f"  - {t.name!r} daemon={t.daemon} alive={t.is_alive()}")
     try:
-        children = list(Path("/proc/self/task").iterdir())
-        log(f"[{name}] diag: /proc/self/task has {len(children)} entries")
+        log(f"[{name}] diag: /proc/self/task has "
+            f"{len(list(Path('/proc/self/task').iterdir()))} entries")
     except Exception:
         pass
     try:
         proc_dir = Path(f"/proc/{os.getpid()}")
-        # Direct child processes (zombies + alive)
         kids: list[tuple[int, str, str]] = []
         for d in Path("/proc").iterdir():
-            if not d.name.isdigit(): continue
+            if not d.name.isdigit():
+                continue
             try:
                 stat = (d / "stat").read_text()
-                # stat: pid (comm) state ppid ...
                 rp = stat.find(")")
                 ppid = int(stat[rp+2:].split()[1])
                 if ppid == os.getpid():
-                    state = stat[rp+2:].split()[0]
-                    comm = stat[stat.find("(")+1:rp]
-                    kids.append((int(d.name), state, comm))
+                    kids.append((int(d.name),
+                                 stat[rp+2:].split()[0],
+                                 stat[stat.find("(")+1:rp]))
             except Exception:
                 pass
         log(f"[{name}] diag: {len(kids)} child processes:")
         for pid, state, comm in kids[:30]:
             log(f"  - pid={pid} state={state} comm={comm!r}")
-        # Open fds
         fds = list((proc_dir / "fd").iterdir())
-        log(f"[{name}] diag: {len(fds)} open fds")
-        # Show non-trivial ones (skip stdin/stdout/stderr, dev/null, library mmaps).
         odd = []
         for f in fds:
             try:
@@ -370,7 +323,7 @@ def _dump_save_diagnostics(name: str, log) -> None:
                     odd.append((f.name, target))
             except OSError:
                 pass
-        log(f"[{name}] diag: {len(odd)} pipe/socket/anon_inode fds:")
+        log(f"[{name}] diag: {len(fds)} fds, {len(odd)} pipe/socket/anon_inode:")
         for n, t in odd[:25]:
             log(f"  - fd={n} -> {t}")
     except Exception as e:
@@ -378,9 +331,7 @@ def _dump_save_diagnostics(name: str, log) -> None:
 
 
 def run_cli(spec: StageSpec) -> int:
-    """Convenience for the agent's `__main__` path. Exits via os._exit
-    so binja + anemone destructors don't run during Python shutdown -
-    the documented segfault path on multi-worker runs."""
+    """`os._exit` skips binja+anemone destructors that segfault on shutdown."""
     args = default_argparser(spec).parse_args()
     rc = asyncio.run(run_stage(spec, args)).return_code
     sys.stdout.flush(); sys.stderr.flush()
@@ -388,10 +339,7 @@ def run_cli(spec: StageSpec) -> int:
 
 
 def run(spec: StageSpec, bndb: str | Path, **kwargs) -> StageArtifacts:
-    """Programmatic entry: chain stages without building argparse strings.
-    `kwargs` overrides any default_argparser default - typical use:
-        run(SPEC, "/path/x.bndb", output="outputs/sig", workers=4, addresses=["0x..."])
-    """
+    """Programmatic entry; kwargs override default_argparser defaults."""
     parser = default_argparser(spec)
     base = parser.parse_args([str(bndb)])
     for k, v in kwargs.items():

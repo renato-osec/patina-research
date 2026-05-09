@@ -1,35 +1,21 @@
-# Terminal submit tool for the signer agent + a PostToolUse hook that
-# validates each submission via `validator(decl)` and bounces it back
-# to the agent (with the validation feedback) for up to `max_rounds`
-# iterations. After max_rounds the latest submission stands as final
-# even if it didn't validate.
+# Submit tool + PostToolUse validator-bounce hook for the flower agent.
 from __future__ import annotations
 
 import os
-
-from typing import Any, Awaitable, Callable
+import re
+from typing import Any, Callable
 
 from claude_agent_sdk import tool, HookMatcher
 
 
-# A validator returns (perfect, feedback, has_warnings, arity_only).
-#   perfect:      True iff every slot + sret + return + arity all agree.
-#   feedback:     verbatim rejection reason if not perfect.
-#   has_warnings: soft cheese signals (offset-named, skip-arrays, etc.)
-#                 - triggers the free first scold even on perfect=True.
-#   arity_only:   not perfect but the only mismatch is missing-reg arity
-#                 (binary optimized away a small bool/u8 arg). Treat
-#                 like perfect for hook purposes - DON'T bounce the
-#                 agent, since the SYSTEM tells them to keep the larger
-#                 sig and asking to "refine" would push them to drop
-#                 the real arg.
+# (perfect, feedback, has_warnings, arity_only, score)
 Validator = Callable[[str], tuple[bool, str, bool, bool, float]]
 APPLY_SCORE_THRESHOLD = 0.85
 
+_FN_SIG_RE = re.compile(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)", re.DOTALL)
+
 
 def _signer_sig(recoveries, fn_addr: int) -> str | None:
-    """Read signer's recovered Rust signature for `fn_addr` from the
-    cross-stage sidecar, or None if absent."""
     try:
         entry = recoveries.get(fn_addr) or {}
     except Exception:
@@ -39,18 +25,16 @@ def _signer_sig(recoveries, fn_addr: int) -> str | None:
 
 
 def _fn_sig_shape(source: str) -> tuple[str, int] | None:
-    """Extract (fn_name, arity) from the first `fn <name>(...)` decl
-    in `source`. Used to compare flower's submission against signer's
-    approved signature without false positives on whitespace/types."""
-    import re
-    m = re.search(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)",
-                  source, re.DOTALL)
+    m = _FN_SIG_RE.search(source)
     if not m:
         return None
-    name = m.group(1)
     raw = m.group(2).strip()
     arity = 0 if not raw else sum(1 for p in raw.split(",") if p.strip())
-    return (name, arity)
+    return (m.group(1), arity)
+
+
+def _txt(msg: str) -> dict:
+    return {"content": [{"type": "text", "text": msg}]}
 
 
 def make(
@@ -68,39 +52,15 @@ def make(
     prelude: str | None = None,
     fn_addr: int = 0,
 ):
-    """Build the submit tool + matching PostToolUse hook.
-
-    Returns `(tools, captured, hook_matcher)`.
-      tools         - list of @tool callables to register on the agent
-      captured      - dict the harness reads after the loop ends
-                      (decl, confidence, rationale, attempts)
-      hook_matcher  - None if `validator is None`, else a HookMatcher
-                      bound to the submit tool that auto-replies with
-                      validator feedback for up to `max_rounds` retries.
-
-    The submit tool always succeeds on its own - the hook is what
-    decides whether the agent gets to stop or has to refine.
-    """
-    captured = {
-        "source": "",        # full Rust source (types + fn body in one string)
-        "name": "",          # agent-chosen Rust symbol; empty = keep existing
-        "decl": "",          # alias of source for legacy downstream consumers
-        "confidence": 0.0,
-        "rationale": "",
-        "attempts": 0,
-        "validations": [],   # list of (source, perfect, feedback) per round
-        "exhausted": False,  # set True if max_rounds was hit without a perfect submit
-        "scolded": False,    # True once we've sent the free antipattern warning
-        "applied": "",       # status of the post-accept bndb write-back (apply_ctx)
-        "signer_bounced": False,  # we bounced once for diverging from signer's sig
-        "complexity_gated": False,  # bounced once for missing regions on big fn
+    """Returns `(tools, captured, hook_matcher_or_None)`."""
+    captured: dict = {
+        "source": "", "name": "", "decl": "",
+        "confidence": 0.0, "rationale": "",
+        "attempts": 0, "validations": [],
+        "exhausted": False, "scolded": False, "applied": "",
+        "signer_bounced": False, "complexity_gated": False,
+        "regions": [],
     }
-
-    # Region-scoped accepted submissions (Rust translations of
-    # block-range pieces of the target fn, validated against just
-    # that region's flow). Persisted to the sidecar so visualisers
-    # can map binary regions to recovered Rust on a later pass.
-    captured["regions"] = []
 
     @tool("submit_region",
           "Persist an ACCEPTED region-level Rust translation. Call "
@@ -119,53 +79,32 @@ def make(
         be = int(args.get("block_end") or 0)
         note = (args.get("note") or "").strip()
         if not src or be <= bs:
-            return {"content": [{"type": "text",
-                                 "text": "error: empty source or invalid range"}]}
-        # Re-validate before persisting. If consistency_module wasn't
-        # threaded through (legacy callers), skip the re-check and
-        # trust the agent's prior `check_region` call.
+            return _txt("error: empty source or invalid range")
         score = 1.0
-        feedback = "(no re-check; consistency_module not bound)"
         if consistency_module is not None and bv is not None:
             full = "\n".join(p for p in (prelude or "", src) if p).strip()
             try:
                 r = consistency_module.check(
                     full, bv=bv, fn_addr=fn_addr,
                     rust_fn_name=rust_fn_name, region=(bs, be))
-                score = 1.0 if r.perfect else 0.0
-                feedback = r.feedback
             except Exception as e:
-                return {"content": [{"type": "text",
-                                     "text": f"error: re-check raised {type(e).__name__}: {e}"}]}
+                return _txt(f"error: re-check raised {type(e).__name__}: {e}")
             if not r.perfect:
-                return {"content": [{"type": "text", "text":
-                    f"region [{bs},{be}) NOT accepted: re-check failed.\n{feedback}"
-                }]}
-        captured["regions"].append({
-            "block_start": bs,
-            "block_end": be,
-            "source": src,
-            "score": score,
-            "note": note,
-        })
-        # Mirror to the cross-stage sidecar immediately.
+                return _txt(f"region [{bs},{be}) NOT accepted: re-check failed.\n{r.feedback}")
+            score = 1.0 if r.perfect else 0.0
+        snippet = {"block_start": bs, "block_end": be,
+                   "source": src, "score": score, "note": note}
+        captured["regions"].append(snippet)
         if apply_ctx is not None and apply_ctx.recoveries is not None:
             try:
                 entry = apply_ctx.recoveries.get(apply_ctx.fn_addr, "flower") or {}
-                regions = list(entry.get("regions") or [])
-                regions.append({
-                    "block_start": bs, "block_end": be,
-                    "source": src, "score": score, "note": note,
-                })
+                regions = list(entry.get("regions") or []) + [snippet]
                 apply_ctx.recoveries.update(
-                    apply_ctx.fn_addr, "flower", regions=regions,
-                )
+                    apply_ctx.fn_addr, "flower", regions=regions)
             except Exception as e:
                 print(f"[flower] submit_region sidecar write failed: "
                       f"{type(e).__name__}: {e}", flush=True)
-        return {"content": [{"type": "text", "text":
-            f"region [{bs},{be}) accepted ({len(src)}B)"
-        }]}
+        return _txt(f"region [{bs},{be}) accepted ({len(src)}B)")
 
     @tool("submit_reconstruction",
           "Submit your final Rust reconstruction of the target function. "
@@ -181,15 +120,13 @@ def make(
            "confidence": float, "rationale": str})
     async def submit_reconstruction(args):
         src = (args.get("source") or "").strip()
-        name = (args.get("name") or "").strip()
         captured["source"] = src
-        captured["name"] = name
-        captured["decl"] = src   # alias for legacy harness fields
+        captured["decl"] = src
+        captured["name"] = (args.get("name") or "").strip()
         captured["confidence"] = float(args.get("confidence", 0.0))
         captured["rationale"] = args.get("rationale", "")
-        return {"content": [{"type": "text",
-                             "text": f"submitted: {len(src)} bytes "
-                                     f"(confidence={captured['confidence']:.2f})"}]}
+        return _txt(f"submitted: {len(src)} bytes "
+                    f"(confidence={captured['confidence']:.2f})")
 
     if validator is None:
         return [submit_region, submit_reconstruction], captured, None
@@ -197,30 +134,22 @@ def make(
     qualified = f"mcp__{server_name}__submit_reconstruction"
 
     async def _apply_to_bv(source: str, agent_name: str) -> str:
-        """Persist the accepted Rust reconstruction: store `source` as
-        the function-level comment + optionally rename. Types/prototype
-        were already applied by the signer stage upstream - flower only
-        adds the body-level recovery on top.
-        """
+        # Persist source as fn.comment + optional rename. Sidecar
+        # write happens FIRST so a bv transaction failure doesn't lose
+        # the recovery.
         if apply_ctx is None or not source.strip():
             return "skip: no apply_ctx" if apply_ctx is None else "skip: empty source"
         bv = apply_ctx.bv
         fn = apply_ctx.target_func()
         if fn is None:
             return f"skip: no fn at {apply_ctx.fn_addr:#x}"
-        renamed = ""
-        if agent_name and agent_name != fn.name:
-            renamed = f" (renamed: {fn.name!r} -> {agent_name!r})"
-        # Persist to the sidecar BEFORE the bv mutation so a transaction
-        # failure doesn't drop the durable record. Sidecar is the
-        # canonical store; bv comment is best-effort.
+        renamed = (f" (renamed: {fn.name!r} -> {agent_name!r})"
+                   if agent_name and agent_name != fn.name else "")
         if apply_ctx.recoveries is not None:
             try:
                 apply_ctx.recoveries.update(
                     apply_ctx.fn_addr, "flower",
-                    source=source,
-                    name=agent_name or fn.name,
-                )
+                    source=source, name=agent_name or fn.name)
             except Exception as e:
                 print(f"[flower] recoveries.update failed @ "
                       f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
@@ -236,11 +165,8 @@ def make(
         return f"ok: comment ({len(source)}B){renamed}"
 
     def _post_first_blurb() -> str:
-        """Built-in context the agent gets after its first submission:
-        the full asm dumped to a file (greppable via Bash), plus the
-        whole HLIL inlined. Surfaces both forcefully so the agent can
-        cross-reference its draft types against ground-truth callees +
-        decompilation without spending tool calls."""
+        # Forced context after attempt 1: full asm path + full HLIL
+        # inlined, so the agent can grep/read instead of paging tools.
         parts: list[str] = []
         if asm_path:
             parts.append(
