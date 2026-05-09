@@ -245,8 +245,11 @@ def main() -> int:
     p.add_argument("--stages", default=",".join(_DEFAULT_ORDER),
                    help="Comma-separated stage names; default: "
                         + ",".join(_DEFAULT_ORDER))
-    p.add_argument("--addresses",
-                   help="Comma-separated function addresses (`0x...`)")
+    p.add_argument("--addresses", nargs="*", default=[],
+                   help="Function addresses (`0x...`). Accepts both "
+                        "space-separated (`--addresses 0xA 0xB 0xC`) "
+                        "and the legacy comma-separated form "
+                        "(`--addresses 0xA,0xB,0xC`).")
     p.add_argument("--depth", type=int)
     p.add_argument("--output", "-o", default="outputs/chain",
                    help="Per-stage outputs go to <output>/<stage>/")
@@ -268,7 +271,12 @@ def main() -> int:
                         "progresses.")
     args = p.parse_args()
 
-    addresses = args.addresses.split(",") if args.addresses else None
+    # Flatten + accept both space-separated (nargs="*") and the legacy
+    # comma-separated form. `--addresses 0xA,0xB 0xC` -> [0xA, 0xB, 0xC].
+    addrs: list[str] = []
+    for a in (args.addresses or []):
+        addrs.extend(p for p in str(a).split(",") if p.strip())
+    addresses: list[str] | None = addrs or None
     artifacts = chain(
         args.bndb,
         output_dir=args.output,
