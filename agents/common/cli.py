@@ -163,9 +163,10 @@ def per_fn_timeout(default_s: int = 600) -> int:
 
 
 def format_context_dir(path: str | None) -> str:
-    """Build a one-block prelude that points the agent at a project dir
-    they can grep/read for cross-references. Empty when `path` is unset
-    or doesn't exist. The block is meant to be appended to user_prompt.
+    """One-line note pointing the agent at a project dir worth poking
+    into for cross-references. Deliberately doesn't enumerate contents
+    - the dir can hold heterogeneous material (notes, source, JSON
+    dumps, scratch). Let the agent decide what's worth opening.
     """
     if not path:
         return ""
@@ -173,20 +174,12 @@ def format_context_dir(path: str | None) -> str:
     p = _P(path).expanduser()
     if not p.is_dir():
         return ""
-    try:
-        top = sorted(c.name + ("/" if c.is_dir() else "")
-                     for c in p.iterdir() if not c.name.startswith("."))
-        top_str = " ".join(top[:40])
-        if len(top) > 40:
-            top_str += f" (+{len(top) - 40} more)"
-    except Exception:
-        top_str = "(listing failed)"
     return (
-        f"\n\n=== project context dir ===\n"
-        f"`{p}` is the project's source tree. Top-level: {top_str}\n"
-        "Grep / Read it for Rust analogues if a binary identifier or "
-        "shape resembles something there. Don't read whole files - "
-        "Bash/Grep targeted searches first.\n=== end context ===\n"
+        f"\n\nProject context dir: `{p}`. Heterogeneous material "
+        "(source, notes, dumps). When a binary symbol, shape, or "
+        "string suggests something domain-specific, peer into it - "
+        "Bash `ls`, then Grep/Read targeted slices. Don't read in "
+        "bulk; let the leads pull you in.\n"
     )
 
 
