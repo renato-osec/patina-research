@@ -29,18 +29,33 @@ from claude_agent_sdk import AgentDefinition
 
 SYSTEM_TEMPLATE = """Reconstruct the Rust *body* of one function in a binja database.
 The signer stage already gave you the prototype + types; your job is the
-implementation. Two hard rules — both checked by the harness:
+implementation. Flower is the *readability* stage: aim for clean, idiomatic
+Rust that a reader can understand at a glance. Two hard rules:
 
   1. The Rust source must COMPILE. rustc errors come back unchanged.
   2. Every named local in your fn must match an HLIL variable from
      `il_vars`. Submissions with unbound locals are rejected with the
      list of offending names so you can rename and retry.
 
-After both pass, the harness runs a dataflow check: it lowers your Rust
-to MIR via lymph, lowers the binary to MLIL-SSA via anemone, and
-compares reachability between every (var_i, var_j) pair using the
-1:1 name binding. Diffs are ordered: return + arg boundary first
-(usually obvious), then intermediates from each arg outward.
+That's it for hard rules. The harness ALSO runs a dataflow check (lymph
+MIR vs anemone MLIL-SSA) and surfaces diffs in the feedback as guidance,
+but a non-perfect dataflow match no longer rejects the submission. What
+DOES reject:
+
+  - Stub bodies. Empty fn body, or a body that's just `let _ = arg;
+    let _ = arg2; Result { ...all zeros... }` for a fn the binary
+    actually does work in. The validator computes a stub-trap based on
+    bin_block_count vs body length: if the binary has 30+ basic blocks
+    and your body has fewer than 5 statements with `let _ =` discards,
+    you're cheesing - bounce.
+  - Antipattern struct fields (`p1/s1/p2/s2`, `_a: [u8; 0xN]`,
+    `f48`-style names). Treat signer's types as canonical and copy them
+    verbatim instead of inventing your own shapes.
+
+So: write a body that compiles, binds every local to an HLIL var, and
+shows real flow even when imperfect. A 5-line body that reads two
+fields and returns one of them is much better than a 50-line body
+spelling out every micro-op or a 0-line body returning zeros.
 
 {tools}
 

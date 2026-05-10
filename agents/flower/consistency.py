@@ -251,11 +251,17 @@ def check(
     has_binary_over = any("binary_over" in d for d in diffs_ordered)
     has_missing_return = any("missing_return_flow" in d for d in diffs_ordered)
     cheese = _detect_cheese(rust_source)
-    # `missing_return_flow` fails alongside `rust_over`. `binary_over`
-    # is anemone's opaque-call worst-case false-positive — surface in
-    # feedback but DO NOT bounce on it. Only real warnings (cheese
-    # antipatterns + dodged underscores) trigger the bounce loop.
-    perfect = not has_rust_over and not has_missing_return
+    # Flower is the readability stage; perfect now just means
+    # 'compiles + every ident binds to a real HLIL var' (the binding
+    # check earlier already enforces unbound==[]). The dataflow
+    # comparison is informational - rust_over/missing_return surface
+    # in feedback but DO NOT gate `perfect`. Strict dataflow
+    # rewarded stub bodies (empty body = no flow = trivially
+    # compatible); the cheese detectors below are the real
+    # stub-stoppers, not the dataflow check.
+    # `dodged` = the agent prefixed a real HLIL var with `_` to evade
+    # the binding check; that's an explicit evasion, kill perfect.
+    perfect = not bool(dodged)
     has_warnings = bool(dodged) or bool(cheese)
     parts: list[str] = []
     if dodged:
