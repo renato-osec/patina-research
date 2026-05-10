@@ -61,3 +61,20 @@ this run started; the next run should turn those 3 into successes.
   flower from renaming WARP-recovered names.
 - 0 regions submitted across all 6 fns. Forced region-first refactor
   is still the next big change for BB→Rust mapping.
+
+## Flower-redo (leniency patch active)
+
+`flower_redo/` archives a re-run of just the 3 v4-FAILED fns
+against v4's signed bndb, with the leniency patch (warning bounce
+at attempt 1, accept at attempt 2; APPLY_SCORE_THRESHOLD 0.5).
+$5.18, 19m, 1/3 fully perfect:
+
+| fn | score | perfect | submits | note |
+|---|---:|:-:|:-:|---|
+| build_adl_candidate_set | 1.00 | ✓ | 2 | leniency cleared the warning |
+| compute_user_margin_and_shortfall | 1.00 | imperfect | 4 | applied via threshold; final validator dataflow off |
+| compute_position_liquidation_check | 1.00 | imperfect | 1 | hit 600s timeout |
+
+So **5/6 fns now have flower bodies in bv** (4 fully perfect + 1
+imperfect-but-applied). compute_position_liquidation_check needs
+a longer timeout.

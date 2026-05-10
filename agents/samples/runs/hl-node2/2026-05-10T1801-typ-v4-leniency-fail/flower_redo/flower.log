@@ -1,0 +1,13 @@
+[flower] 3 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] build_adl_candidate_set  [OK]  source='use std::collections::{BTreeMap, BTreeSet, HashMap};\n\n#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct '  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=21 iters=22 $1.676 t=396.6s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_user_margin_and_shortfall  [imperfect]  source='use std::collections::BTreeMap;\n\n#[repr(C)]\npub struct UnitQty {\n    pub unit: u64,\n    pub value: u64,\n}\n\npub struct As'  final_score=1.00  perfect=False  exhausted=False  submits=4  tools=25 iters=26 $3.504 t=725.5s
+[done ] compute_position_liquidation_check  ERROR: timeout after 600s  (605.6s)
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v4_flowerredo/flower.fault (fd=10)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4_flowerredo/hl-node2.warped.marinated.signed.flowered.bndb (2.4s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4_flowerredo/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 1139.2s, 1/3 perfect, 0 failed, 87,554 tokens, $5.180, output outputs/chain_typ_v4_flowerredo/flower.json
