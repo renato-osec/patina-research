@@ -213,9 +213,12 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
         if not src:
             return _err("source is empty")
         full = "\n".join(p for p in (prelude or "", src) if p).strip()
+        signer_sig, signer_types = consistency.lookup_signer(recoveries, addr)
         try:
             r = consistency.check(full, bv=bv, fn_addr=addr,
-                                  rust_fn_name=rust_fn_name)
+                                  rust_fn_name=rust_fn_name,
+                                  signer_sig=signer_sig,
+                                  signer_types=signer_types)
         except Exception as e:
             return _err(f"check_reconstruction failed: {type(e).__name__}: {e}")
         return _ok(_format(r, rust_fn_name))
@@ -304,10 +307,13 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
             region = (bs, be)
             tag = f"region=[{bs},{be})"
         full = "\n".join(p for p in (prelude or "", src) if p).strip()
+        signer_sig, signer_types = consistency.lookup_signer(recoveries, addr)
         try:
             r = consistency.check(full, bv=bv, fn_addr=addr,
                                   rust_fn_name=rust_fn_name,
-                                  region=region)
+                                  region=region,
+                                  signer_sig=signer_sig,
+                                  signer_types=signer_types)
         except Exception as e:
             return _err(f"check_region {tag}: "
                         f"{type(e).__name__}: {e}")

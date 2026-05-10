@@ -114,6 +114,50 @@ class CheckResult:
     binary_var_count: int = 0
 
 
+_STRUCT_DEF_RE = __import__("re").compile(
+    r"\bstruct\s+([A-Z][A-Za-z0-9_]*)\b(?:\s*<[^>]*>)?\s*\{([^}]*)\}",
+)
+
+
+def _parse_struct_fields(types_src: str) -> dict[str, set[str]]:
+    """Return {struct_name -> {field_name, ...}} from a Rust types blob.
+    Approximate: ignores types and generic params, just names."""
+    out: dict[str, set[str]] = {}
+    for m in _STRUCT_DEF_RE.finditer(types_src or ""):
+        name = m.group(1)
+        body = m.group(2)
+        fields: set[str] = set()
+        for ln in body.split(","):
+            ln = ln.strip()
+            if not ln or ln.startswith("//"):
+                continue
+            ln = ln.removeprefix("pub ").strip()
+            colon = ln.find(":")
+            if colon > 0:
+                fields.add(ln[:colon].strip())
+        out[name] = fields
+    return out
+
+
+def _norm_sig(s: str) -> str:
+    import re as _re
+    return _re.sub(r"\s+", " ", (s or "").strip())
+
+
+def lookup_signer(recoveries, fn_addr: int) -> tuple[str | None, str | None]:
+    """Pull (rust_signature, rust_types) from the sidecar for the fn at
+    fn_addr. Returns (None, None) if no signer entry. Used to thread
+    signer's prototype + types into the validator so flower can't
+    invent new struct identities."""
+    if recoveries is None:
+        return None, None
+    try:
+        entry = recoveries.get(fn_addr, "signer") or {}
+    except Exception:
+        return None, None
+    return entry.get("rust_signature") or None, entry.get("rust_types") or None
+
+
 def check(
     rust_source: str,
     *,
@@ -121,16 +165,21 @@ def check(
     fn_addr: int,
     rust_fn_name: str,
     region: tuple[int, int] | list[int] | None = None,
+    signer_sig: str | None = None,
+    signer_types: str | None = None,
 ) -> CheckResult:
-    """Verify `rust_source` compiles and its dataflow matches the binary
-    fn at `fn_addr`. Var binding is by name: every Rust var must be
-    named after an HLIL var (`arg1`, `var_28`, etc.) so the mapping
-    `rust_name -> il_name` is the identity intersection.
+    """Verify `rust_source` compiles and matches signer's recovered
+    interface. Var binding is by name: every Rust var must be named
+    after an HLIL var (`arg1`, `var_28`, etc.).
 
     `region` scopes the binary lowering to a subset of basic blocks:
       - `(block_start, block_end)` tuple: contiguous range
-      - `list[int]`: arbitrary BB indices, may be non-contiguous (use
-        for inlined fn bodies that lower to scattered blocks)
+      - `list[int]`: arbitrary BB indices, may be non-contiguous
+
+    `signer_sig` / `signer_types` (from the sidecar): when provided,
+    the validator enforces that the main fn's prototype matches
+    signer's verbatim and that any struct signer named is not
+    redefined with a different field set in flower's source.
     """
     # 0a. Bug 5: reject `#![allow(...)]` attribute spam unless it's
     # only `dead_code` (the one allow that's legitimately useful in
@@ -179,6 +228,42 @@ def check(
                 "high-level types verbatim (`&Foo`, `&mut Foo`, `Vec<T>`, "
                 "etc). Raw pointers belong inside opaque-callee stubs, "
                 "not the public prototype.", False)
+        # Signer-handoff enforcement: prototype must match verbatim.
+        if signer_sig:
+            sig_str = (f"({params or ''}){ret or ''}").strip()
+            want = _norm_sig(signer_sig)
+            got = _norm_sig(sig_str)
+            if want and want != got:
+                return CheckResult(False,
+                    f"submission rejected: main fn signature does not "
+                    f"match signer's recovered prototype. Copy signer's "
+                    f"signature into your `fn {rust_fn_name}(...)` "
+                    f"verbatim.\n"
+                    f"  signer: {want}\n"
+                    f"  yours:  {got}", False)
+    # Signer-handoff: struct identity. Any struct named in signer's
+    # types must NOT be redefined in flower's source with a different
+    # field set. The agent should include signer's types verbatim in
+    # the prelude (or omit them and import); inventing a new
+    # `pub struct Foo { ... }` with different fields is rejected.
+    if signer_types:
+        want_fields = _parse_struct_fields(signer_types)
+        got_fields = _parse_struct_fields(rust_source)
+        for name, want_set in want_fields.items():
+            got_set = got_fields.get(name)
+            if got_set is not None and got_set != want_set:
+                miss = sorted(want_set - got_set)
+                extra = sorted(got_set - want_set)
+                msg = (f"submission rejected: struct `{name}` is "
+                       f"redefined with a different field set than "
+                       f"signer recovered. ")
+                if miss:
+                    msg += f"missing signer fields: {miss}. "
+                if extra:
+                    msg += f"new agent-invented fields: {extra}. "
+                msg += ("Copy signer's struct verbatim into your "
+                        "prelude.")
+                return CheckResult(False, msg, False)
     # 1. Compile via lymph; with_compiler_errors captures rustc stderr
     #    and appends it to the exception so the agent sees real
     #    diagnostics instead of "rustc driver aborted".

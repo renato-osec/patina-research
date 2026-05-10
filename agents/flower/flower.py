@@ -84,9 +84,17 @@ WIN CONDITIONS — what makes a perfect reconstruction:
 SAFE-RUST CONTRACT (hard requirement):
   - The main fn MUST use signer's exact prototype, verbatim, with the
     exact param names + types and the exact return type signer gave.
-    No `extern "C"`, no `unsafe fn` on the main fn, no raw pointers
-    (`*mut T` / `*const T`) in its arguments or return type. If signer
-    typed it `&State`, you write `&State` - not `*const u8`.
+    The validator parses signer's recovered signature and rejects any
+    submission whose `fn {rust_fn_name}(...)` deviates. No `extern
+    "C"`, no `unsafe fn`, no raw pointers (`*mut T` / `*const T`) in
+    its arguments or return type. If signer typed it `&State`, you
+    write `&State` - not `*const u8` or `&AssetState` or `&MyState`.
+  - Every struct signer named in `signer_types` MUST appear in your
+    prelude with the EXACT same field set, or be referenced without
+    redefinition. Don't invent `pub struct Position { assets }` if
+    signer recovered `pub struct OracleAsset { oracle_entries, ... }`
+    - copy signer's struct verbatim. The validator rejects redefined
+    structs with different fields.
   - The body itself is safe Rust: no `unsafe { ... }` blocks. If you
     feel the urge to write one, you're modeling at the wrong layer -
     use the high-level signer types instead of raw memory.
@@ -399,9 +407,13 @@ async def sign_function(
     rust_fn_name = consistency.clean_fn_name(short)
     def validator(decl: str) -> tuple[bool, str, bool, bool, float]:
         full = "\n".join(p for p in (prelude or "", decl) if p).strip()
+        signer_sig, signer_types = consistency.lookup_signer(
+            ctx.recoveries, fn_addr)
         try:
             r = consistency.check(full, bv=bv, fn_addr=fn_addr,
-                                  rust_fn_name=rust_fn_name)
+                                  rust_fn_name=rust_fn_name,
+                                  signer_sig=signer_sig,
+                                  signer_types=signer_types)
         except Exception as e:
             return False, f"check_reconstruction raised {type(e).__name__}: {e}", False, False, 0.0
         if r.perfect:

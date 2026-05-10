@@ -99,10 +99,15 @@ def make(
         score = 1.0
         if consistency_module is not None and bv is not None:
             full = "\n".join(p for p in (prelude or "", src) if p).strip()
+            signer_sig, signer_types = (None, None)
+            if apply_ctx is not None and apply_ctx.recoveries is not None:
+                signer_sig, signer_types = consistency_module.lookup_signer(
+                    apply_ctx.recoveries, apply_ctx.fn_addr)
             try:
                 r = consistency_module.check(
                     full, bv=bv, fn_addr=fn_addr,
-                    rust_fn_name=rust_fn_name, region=region)
+                    rust_fn_name=rust_fn_name, region=region,
+                    signer_sig=signer_sig, signer_types=signer_types)
             except Exception as e:
                 return _txt(f"error: re-check raised {type(e).__name__}: {e}")
             if not r.perfect:
