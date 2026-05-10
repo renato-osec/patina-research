@@ -235,11 +235,12 @@ def check(
     has_binary_over = any("binary_over" in d for d in diffs_ordered)
     has_missing_return = any("missing_return_flow" in d for d in diffs_ordered)
     cheese = _detect_cheese(rust_source)
-    # `missing_return_flow` fails alongside `rust_over`. Arg↔arg
-    # `binary_over` stays a warning (opaque-call worst-case is real
-    # there). Interior `binary_over` also stays a warning.
+    # `missing_return_flow` fails alongside `rust_over`. `binary_over`
+    # is anemone's opaque-call worst-case false-positive — surface in
+    # feedback but DO NOT bounce on it. Only real warnings (cheese
+    # antipatterns + dodged underscores) trigger the bounce loop.
     perfect = not has_rust_over and not has_missing_return
-    has_warnings = bool(dodged) or bool(cheese) or (perfect and has_binary_over)
+    has_warnings = bool(dodged) or bool(cheese)
     parts: list[str] = []
     if dodged:
         parts.append(
