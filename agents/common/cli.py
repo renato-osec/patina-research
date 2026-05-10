@@ -1,18 +1,4 @@
-# Shared CLI-spawn primitives for agents that drive the Claude Code CLI.
-#
-# Every agent that calls `query()` runs the SDK's Node CLI as a
-# subprocess. Source-of-truth pattern is `agents/marinator/marinator.py`;
-# this file lifts the parts that are not marinator-specific so other
-# agents (signer, recompiler, ...) can share them without copy-paste:
-#
-#   - CLI_ENV_SCRUB: env vars that must be empty when spawning the CLI.
-#   - transcript_path(session_id): resolve the SDK's auto-saved JSONL.
-#   - suggest_max_turns(fn): basic-block-count heuristic.
-#
-# Drop-in usage:
-#   from cli import CLI_ENV_SCRUB, transcript_path, suggest_max_turns
-#   ...
-#   stream = query(prompt=..., options=agent._build_options(env=CLI_ENV_SCRUB))
+# Shared SDK CLI primitives: env scrub, transcript path, max-turns heuristic.
 from __future__ import annotations
 
 import asyncio
@@ -22,11 +8,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Awaitable, Callable
 
 
-# The Claude Code CLI is a Node binary. Sourcing patina/.envrc loads the
-# binja + libclang + libstdc++ paths into LD_LIBRARY_PATH, which clashes
-# with Node's libc and SIGTRAPs the CLI subprocess (exit code -5). Pass
-# this dict as `env=` when building ClaudeAgentOptions to scrub them
-# before spawn.
+# LD_LIBRARY_PATH from binja libs SIGTRAPs Node CLI; scrub before spawn.
 CLI_ENV_SCRUB: dict[str, str] = {
     "LD_LIBRARY_PATH": "",
     "GLIBC_TUNABLES": "",
@@ -89,14 +71,7 @@ class AgentResult:
     cache_create_tokens: int = 0
     cost_usd: float = 0.0
     error: str = ""
-    # Post-stream hiccup that doesn't invalidate the run (e.g. CLI
-    # subprocess exits non-zero AFTER the ResultMessage already
-    # streamed through). Surfaced separately from `error` so callers
-    # can keep the recovered data while still seeing the warning.
-    transport_error: str = ""
-    # SDK session UUID. The Claude CLI auto-writes the full conversation
-    # at ~/.claude/projects/<key>/<session_id>.jsonl. Resolve via
-    # `transcript_path(rec.session_id)`.
+    transport_error: str = ""  # post-stream warning; data still valid.
     session_id: str = ""
 
 
@@ -160,12 +135,7 @@ async def run_with_timeout(
     transport failures in TaskGroup exceptions), and plain Exception.
     """
     def _record(msg: str) -> None:
-        # If we already saw a ResultMessage (rec.session_id was set by
-        # drive_stream), the run completed end-to-end and this exception
-        # is a post-stream transport hiccup (CLI subprocess exited
-        # non-zero after the result already streamed, etc). Surface it
-        # in `transport_error` so we keep the run's recovered data
-        # instead of marking the whole thing failed.
+        # session_id set => ResultMessage already streamed; demote to warning.
         if rec.session_id:
             rec.transport_error = msg
         else:
@@ -192,17 +162,7 @@ def per_fn_timeout(default_s: int = 600) -> int:
     return int(os.environ.get("PER_FN_TIMEOUT_S", str(default_s)))
 
 
-# --- stderr capture for compiler-backed tools ---------------------------
-#
-# Tools that invoke rustc (e.g. `nacre.signature`, `nacre.layout`,
-# `nacre.probe`) write diagnostics to native fd 2, not Python's
-# sys.stderr - so a regular `try/except` only sees the outer
-# "rustc driver aborted (fatal compile error)" wrapper, not the
-# underlying "cannot find type X" lines the agent needs to recover.
-#
-# Any agent-facing tool that wraps a rustc-spawning call should run it
-# through `with_compiler_errors` so failures re-raise with the captured
-# stderr appended.
+# --- stderr capture for compiler-backed tools (rustc -> native fd 2) ---
 
 import contextlib as _contextlib
 import os as _os
@@ -279,16 +239,11 @@ def _schema_str(schema: dict) -> str:
     return "{" + ", ".join(f"{k}: {_short_type(v)}" for k, v in schema.items()) + "}"
 
 
-# Read-only builtin tools an agent needs to chunk through long binja
-# outputs that the harness paged out to disk. Drop into Agent's
-# `allowed_builtins=`. Add `Write`/`Edit` only if the agent actually
-# mutates state (marinator does; signer / recompiler don't).
+# Builtins for chunking long binja outputs. Add Write/Edit if agent mutates.
 READONLY_BUILTINS: list[str] = ["Bash", "Read", "Grep", "Glob"]
 
 
-# Stock note for the SYSTEM prompt explaining how to recover when a
-# binja tool returns "result exceeds maximum allowed tokens / saved to
-# <path>". Append after the tools_block via `extra_lines=`.
+# SYSTEM-prompt note: how to read a tool output paged to disk.
 LONG_OUTPUT_NOTE: str = (
     "If a binja tool's response says 'result exceeds maximum allowed tokens. "
     "Output has been saved to <path>', DON'T retry the same tool with the same "
@@ -299,16 +254,7 @@ LONG_OUTPUT_NOTE: str = (
 )
 
 
-# --- call-graph helpers --------------------------------------------------
-#
-# Pipelines that batch-analyze functions (marinator, future signer
-# multi-target mode, ...) want two things:
-#   1. expand a small seed list into a depth-bounded closure of callees
-#   2. emit them in callees-before-caller order so a parent is never
-#      analyzed before its children - leaves first, then their callers.
-#
-# Both are graph ops over `binaryninja.Function.callees`, kept here so
-# every pipeline shares the same definition of "depth" + "topo order".
+# --- call-graph helpers: depth-bounded callee closure + topo order ---
 
 
 def add_depth_arg(parser, dest: str = "depth", short: str = "-d") -> None:
