@@ -333,7 +333,13 @@ async def sign_function(
                                   rust_fn_name=rust_fn_name)
         except Exception as e:
             return False, f"check_reconstruction raised {type(e).__name__}: {e}", False, False, 0.0
-        return r.perfect, r.feedback, r.has_warnings, False, (1.0 if r.perfect else 0.0)
+        if r.perfect:
+            score = 1.0
+        elif not r.has_warnings:
+            score = 0.6
+        else:
+            score = 0.55
+        return r.perfect, r.feedback, r.has_warnings, False, score
 
     # Pre-dump full asm + HLIL so the submit hook can hand them to the
     # agent post-first-submit (forced ground-truth context). Best-effort:

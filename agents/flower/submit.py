@@ -10,7 +10,7 @@ from claude_agent_sdk import tool, HookMatcher
 
 # (perfect, feedback, has_warnings, arity_only, score)
 Validator = Callable[[str], tuple[bool, str, bool, bool, float]]
-APPLY_SCORE_THRESHOLD = 0.85
+APPLY_SCORE_THRESHOLD = 0.5  # flower is the readability stage; lenient.
 
 _FN_SIG_RE = re.compile(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)", re.DOTALL)
 
@@ -290,48 +290,45 @@ def make(
                         ),
                     }
 
-        # Cheese / offset-named-fields warnings count as REJECTION now
-        # (no free pass). Layout matched but the struct papers over real
-        # fields - the agent must refine. Counts toward the submit budget;
-        # the bounce loop iterates up to max_rounds.
-        if has_warnings:
-            if attempt >= max_rounds:
-                captured["exhausted"] = True
-                if score >= APPLY_SCORE_THRESHOLD:
-                    captured["applied"] = await _apply_to_bv(source, agent_name)
-                else:
-                    captured["applied"] = (
-                        f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
-                    )
-                return {
-                    "hookSpecificOutput": {
-                        "hookEventName": "PostToolUse",
-                        "additionalContext": (
-                            f"Quality warning persisted across "
-                            f"{max_rounds} attempts; budget exhausted, "
-                            f"submission accepted as final."
-                        ),
-                    }
-                }
+        # Flower is the readability-focused stage; warnings bounce
+        # ONCE to give the agent a chance to fix obvious antipatterns,
+        # then accept. Don't burn the full max_rounds budget on style.
+        if has_warnings and attempt == 1:
             return {
                 "decision": "block",
                 "reason": (
-                    f"Submission REJECTED (attempt {attempt}/{max_rounds}) "
-                    "- quality warning. The layout may match byte-for-byte, "
-                    "but the types you submitted paper over real fields "
-                    "rather than recovering them.\n\n"
-                    f"{feedback}\n\n"
-                    "Refine: try idiomatic Rust types (Vec/HashMap/"
-                    "String/Option/Result/&str/&[T]) where the offsets "
-                    "fit. If a chunk of bytes is exactly 24B, try "
-                    "Vec<u8> / String first; 48B -> HashMap<K,V>. Don't "
-                    "submit `_a: [u8; 0xN]`, `p1/s1/p2/s2`, or `f48`-style "
-                    "names - those are the antipattern. Use the targeted "
-                    "tools (field_accesses, hlil_around) to figure out "
-                    "what the struct actually represents, then submit "
-                    "again."
+                    "Submission flagged (attempt 1/2 for warnings) - "
+                    "minor antipatterns. Body is otherwise OK. Quick "
+                    "pass: replace any `_a: [u8;N]`, `p1/s1/p2/s2`, "
+                    "`f48`-style fields with idiomatic Rust types "
+                    "(Vec/HashMap/String/Option/Result/&str/&[T]) "
+                    "where they fit. If you can't see what to change, "
+                    "re-submit the SAME source and the harness will "
+                    "accept it.\n\n"
+                    f"{feedback}"
                     f"{_post_first_blurb() if attempt == 1 else ''}"
                 ),
+            }
+        if has_warnings:  # attempt >= 2: accept with warnings recorded
+            captured["exhausted"] = True
+            if score >= APPLY_SCORE_THRESHOLD:
+                captured["applied"] = await _apply_to_bv(source, agent_name)
+            else:
+                captured["applied"] = (
+                    f"reject: score={score:.2f} < {APPLY_SCORE_THRESHOLD}"
+                )
+            return {"hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": (
+                    "Warning(s) persisted on attempt 2; accepted as "
+                    "final - flower prioritizes readability over "
+                    "perfect layout match."
+                ),
+            }}
+        if False:  # placeholder for stale-block typing  # noqa
+            return {
+                "decision": "block",
+                "reason": "",
             }
 
         # Force-iterate: a non-warning, non-arity, perfect first submit

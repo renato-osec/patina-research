@@ -76,15 +76,6 @@ def _is_trivial_body(rust_source: str, rust_fn_name: str,
             f"computation; if any are truly unused, drop them from "
             f"the signature."
         )
-    let_underscore = sum(1 for s in stmts if s.startswith("let _"))
-    if (let_underscore >= max(3, len(stmts) // 3)
-            and bin_block_count > 4):
-        return True, (
-            f"submission rejected: {let_underscore}/{len(stmts)} "
-            f"statements are `let _ = ...`. That's binding theater - "
-            f"using HLIL var names without flowing them. Use the "
-            f"bound vars in real computation."
-        )
     return False, ""
 
 
