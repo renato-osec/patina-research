@@ -112,8 +112,8 @@ primitives to dodge a compile error", you're losing the run.
 # Shared CLI primitives - see agents/common/cli.py for details.
 from cli import (
     AgentResult, CLI_ENV_SCRUB, LONG_OUTPUT_NOTE, READONLY_BUILTINS,
-    drive_stream, per_fn_timeout, run_with_timeout, tools_block,
-    transcript_path as _transcript_path_for_id,
+    drive_stream, format_context_dir, per_fn_timeout, run_with_timeout,
+    tools_block, transcript_path as _transcript_path_for_id,
 )
 
 
@@ -155,6 +155,7 @@ async def sign_function(
     timeout_s: int | None = None,
     shared_ctx: TargetCtx | None = None,
     trace: bool = False,
+    context_dir: str | None = None,
 ) -> SignerResult:
     """Run signer on one fn. `prelude` appended to each check_signature."""
     # Per-worker fork: shared fn_addr races under asyncio.
@@ -218,6 +219,7 @@ async def sign_function(
         f"Inspect the function, propose a decl, iterate via "
         f"`check_signature`, then `submit_signature`."
     )
+    user_prompt += format_context_dir(context_dir)
     if no_gate:
         gate_state = {"unlocked": True, "blocks": 0}
         hooks: dict = {}

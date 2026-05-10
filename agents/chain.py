@@ -120,6 +120,7 @@ def chain(
     timeout: int | None = None,
     submit_rounds: int = 3,
     prelude_file: str | None = None,
+    context_dir: str | None = None,
     verbose: bool = False,
     stop_on_failure: bool = False,
     clear: bool = False,
@@ -141,6 +142,7 @@ def chain(
     common_kwargs = dict(
         addresses=addresses, depth=depth, workers=workers, model=model,
         max_turns=max_turns, timeout=timeout, verbose=verbose,
+        context_dir=context_dir,
     )
     # Strip None so default_argparser keeps its defaults.
     common_kwargs = {k: v for k, v in common_kwargs.items() if v is not None}
@@ -222,6 +224,9 @@ def main() -> int:
     p.add_argument("--submit-rounds", type=int, default=3)
     p.add_argument("--timeout", type=int, default=None)
     p.add_argument("--prelude-file")
+    p.add_argument("--context-dir",
+                   help="Project source dir agents may grep/read for "
+                        "Rust analogues (e.g. /home/renny/hl).")
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--stop-on-failure", action="store_true",
                    help="Abort the chain at the first stage with failures")
@@ -245,6 +250,7 @@ def main() -> int:
         submit_rounds=args.submit_rounds,
         timeout=args.timeout,
         prelude_file=args.prelude_file,
+        context_dir=args.context_dir,
         verbose=args.verbose,
         stop_on_failure=args.stop_on_failure,
         clear=args.clear,

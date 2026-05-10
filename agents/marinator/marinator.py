@@ -219,6 +219,7 @@ from cli import (
     AgentResult,
     CLI_ENV_SCRUB as _CLI_ENV_SCRUB,
     drive_stream,
+    format_context_dir,
     per_fn_timeout,
     run_with_timeout,
     suggest_max_turns as _suggest_max_turns,
@@ -254,6 +255,7 @@ async def marinate_function(
     max_turns: int | None = None,
     quiet: bool = True,
     shared_ctx: TargetCtx | None = None,
+    context_dir: str | None = None,
 ) -> MarinationResult:
     """Run the marinator agent on one function. Caller owns the BV lifecycle.
 
@@ -305,6 +307,7 @@ async def marinate_function(
         f"Start with `decompile` and `stack_vars`, then plan a batch of renames.\n"
         f"Apply changes directly. Finish with `finish`."
     )
+    user_prompt += format_context_dir(context_dir)
 
     stream = query(prompt=user_prompt, options=a._build_options(env=_CLI_ENV_SCRUB))
     await run_with_timeout(_drive(stream, rec, quiet=quiet), rec, PER_FN_TIMEOUT_S)

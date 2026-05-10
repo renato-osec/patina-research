@@ -31,12 +31,12 @@ def _extra_run_kwargs(args):
 
 
 async def _run_one(*, bv, ctx, name, addr, model, max_turns, timeout_s,
-                   trace, log, prelude, submit_rounds):
+                   trace, log, prelude, submit_rounds, context_dir=None):
     return await sign_function(
         bv, addr,
         prelude=prelude, model=model, max_turns=max_turns,
         submit_rounds=submit_rounds, timeout_s=timeout_s,
-        shared_ctx=ctx, trace=trace,
+        shared_ctx=ctx, trace=trace, context_dir=context_dir,
     )
 
 

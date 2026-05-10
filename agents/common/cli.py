@@ -162,6 +162,34 @@ def per_fn_timeout(default_s: int = 600) -> int:
     return int(os.environ.get("PER_FN_TIMEOUT_S", str(default_s)))
 
 
+def format_context_dir(path: str | None) -> str:
+    """Build a one-block prelude that points the agent at a project dir
+    they can grep/read for cross-references. Empty when `path` is unset
+    or doesn't exist. The block is meant to be appended to user_prompt.
+    """
+    if not path:
+        return ""
+    from pathlib import Path as _P
+    p = _P(path).expanduser()
+    if not p.is_dir():
+        return ""
+    try:
+        top = sorted(c.name + ("/" if c.is_dir() else "")
+                     for c in p.iterdir() if not c.name.startswith("."))
+        top_str = " ".join(top[:40])
+        if len(top) > 40:
+            top_str += f" (+{len(top) - 40} more)"
+    except Exception:
+        top_str = "(listing failed)"
+    return (
+        f"\n\n=== project context dir ===\n"
+        f"`{p}` is the project's source tree. Top-level: {top_str}\n"
+        "Grep / Read it for Rust analogues if a binary identifier or "
+        "shape resembles something there. Don't read whole files - "
+        "Bash/Grep targeted searches first.\n=== end context ===\n"
+    )
+
+
 def scale_timeout_by_bbs(base_s: int, fn: Any) -> int:
     """Scale a base timeout by basic-block count. Big fns get more time."""
     try:

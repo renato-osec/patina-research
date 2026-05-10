@@ -17,11 +17,11 @@ from marinator import marinate_function
 
 
 async def _run_one(*, bv, ctx, name, addr, model, max_turns, timeout_s,
-                   trace, log, **_unused):
+                   trace, log, context_dir=None, **_unused):
     return await marinate_function(
         bv, addr, model=model,
         max_turns=max_turns if max_turns > 0 else None,
-        quiet=not trace, shared_ctx=ctx,
+        quiet=not trace, shared_ctx=ctx, context_dir=context_dir,
     )
 
 

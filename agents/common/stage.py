@@ -74,6 +74,9 @@ def default_argparser(spec: StageSpec) -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="List targets only")
     p.add_argument("--verbose", action="store_true",
                    help="Stream per-tool log lines from each agent")
+    p.add_argument("--context-dir",
+                   help="Project source dir the agent can grep/read for "
+                        "Rust analogues (e.g. /home/renny/hl).")
     p.add_argument("--clear", action="store_true",
                    help=f"Delete the cross-stage sidecar "
                         f"(<bndb-stem>.patina.json) before running so prior "
@@ -164,6 +167,7 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
                 bv=bv, ctx=ctx, name=fn_name, addr=addr,
                 model=args.model, max_turns=args.max_turns,
                 timeout_s=args.timeout, trace=args.verbose, log=log,
+                context_dir=getattr(args, "context_dir", None),
                 **run_kwargs,
             )
             if rec.error:

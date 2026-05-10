@@ -151,8 +151,8 @@ the submit bounces with "rustc driver aborted", re-submit it unchanged.
 # Shared CLI primitives - see agents/common/cli.py for details.
 from cli import (
     AgentResult, CLI_ENV_SCRUB, LONG_OUTPUT_NOTE, READONLY_BUILTINS,
-    drive_stream, per_fn_timeout, run_with_timeout, tools_block,
-    transcript_path as _transcript_path_for_id,
+    drive_stream, format_context_dir, per_fn_timeout, run_with_timeout,
+    tools_block, transcript_path as _transcript_path_for_id,
 )
 
 
@@ -244,6 +244,7 @@ async def sign_function(
     timeout_s: int | None = None,
     shared_ctx: TargetCtx | None = None,
     trace: bool = False,
+    context_dir: str | None = None,
 ) -> FlowerResult:
     """Run flower on one fn. `prelude` appended to each check_signature.
     `submit_rounds` caps PostToolUse bounces (1 = accept first try)."""
@@ -314,6 +315,7 @@ async def sign_function(
     prior_block = _format_prior(ctx.recoveries, fn_addr) if ctx.recoveries else ""
     if prior_block:
         user_prompt += "\n\n" + prior_block
+    user_prompt += format_context_dir(context_dir)
     if no_gate:
         gate_state = {"unlocked": True, "blocks": 0}
         hooks: dict = {}
