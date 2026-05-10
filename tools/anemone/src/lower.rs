@@ -43,32 +43,44 @@ pub fn lower_block_at_addr(func: &Function, addr: u64) -> Option<FlowGraph> {
     lower_indices(func, &ssa, blk.start_index().0..blk.end_index().0)
 }
 
-/// Lower a contiguous range of basic blocks `[block_start, block_end)`
-/// into a single FlowGraph. Use this to scope flower's dataflow
-/// validation to a region of a function instead of the whole body.
-/// Returns None if the range is empty or out of bounds.
-pub fn lower_region(
+/// Lower an arbitrary set of basic-block indices into one FlowGraph.
+/// Indices may be non-contiguous (e.g. inlined fn body lowered to BBs
+/// 7+12+23). Duplicates ignored; out-of-range indices skipped.
+pub fn lower_blocks(
     func: &Function,
-    block_start: usize,
-    block_end: usize,
+    block_ids: &[usize],
 ) -> Option<FlowGraph> {
     let mlil = func.medium_level_il().ok()?;
     let ssa = mlil.ssa_form();
     let bb_vec = ssa.basic_blocks();
     let n_blocks = bb_vec.iter().count();
-    if block_start >= n_blocks || block_start >= block_end {
+    let mut wanted: std::collections::BTreeSet<usize> = block_ids.iter()
+        .filter(|&&i| i < n_blocks)
+        .copied()
+        .collect();
+    if wanted.is_empty() {
         return None;
     }
-    let end = block_end.min(n_blocks);
     let mut indices: Vec<usize> = Vec::new();
     for (i, b) in bb_vec.iter().enumerate() {
-        if i < block_start { continue; }
-        if i >= end { break; }
+        if !wanted.remove(&i) { continue; }
         for j in b.start_index().0..b.end_index().0 {
             indices.push(j);
         }
     }
     lower_indices(func, &ssa, indices)
+}
+
+/// Lower a contiguous range of basic blocks `[block_start, block_end)`
+/// into a single FlowGraph. Convenience wrapper around `lower_blocks`.
+pub fn lower_region(
+    func: &Function,
+    block_start: usize,
+    block_end: usize,
+) -> Option<FlowGraph> {
+    if block_start >= block_end { return None; }
+    let ids: Vec<usize> = (block_start..block_end).collect();
+    lower_blocks(func, &ids)
 }
 
 /// Public block-listing helper: `[(idx, start_addr, end_addr,

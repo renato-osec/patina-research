@@ -4,8 +4,8 @@ pub mod flow;
 mod lower;
 
 pub use flow::{Edge, EdgeKind, FlowGraph, Slot, SlotId};
-pub use lower::{lower_block_at_addr, lower_block_at_index, lower_function,
-                lower_region, list_blocks};
+pub use lower::{lower_block_at_addr, lower_block_at_index, lower_blocks,
+                lower_function, lower_region, list_blocks};
 
 use binaryninja::binary_view::{BinaryView, BinaryViewExt};
 use binaryninja::function::Function as BnFunction;
@@ -29,6 +29,14 @@ pub fn analyze_region(
     block_end: usize,
 ) -> Option<FlowGraph> {
     with_func_at(bv, fn_addr, |f| lower_region(f, block_start, block_end))
+}
+
+pub fn analyze_blocks(
+    bv: &BinaryView,
+    fn_addr: u64,
+    block_ids: &[usize],
+) -> Option<FlowGraph> {
+    with_func_at(bv, fn_addr, |f| lower_blocks(f, block_ids))
 }
 
 pub fn list_blocks_for(bv: &BinaryView, fn_addr: u64) -> Option<Vec<(usize, u64, u64, usize)>> {
@@ -342,6 +350,25 @@ mod py {
         )
     }
 
+    /// Lower an arbitrary set of basic-block indices into one FlowGraph.
+    /// Indices may be non-contiguous (inlined fn body lowered to BBs
+    /// 7+12+23). Use for region submissions where the agent groups
+    /// BBs by source-level meaning instead of binary order.
+    #[pyfunction]
+    fn analyze_blocks(
+        py: Python<'_>,
+        py_bv: &Bound<'_, PyAny>,
+        fn_addr: u64,
+        block_ids: Vec<usize>,
+    ) -> PyResult<PyFlowGraph> {
+        let ids_repr = format!("{block_ids:?}");
+        run_lowering(
+            py, py_bv,
+            format!("no MLIL-SSA blocks {ids_repr} in fn {fn_addr:#x}"),
+            move |view| crate::analyze_blocks(view, fn_addr, &block_ids),
+        )
+    }
+
     /// `[(idx, start_addr, end_addr, instr_count), ...]` for every
     /// basic block in the fn's MLIL-SSA. Lets agent navigate to
     /// regions without recomputing in Python.
@@ -442,6 +469,7 @@ mod py {
         m.add_function(wrap_pyfunction!(analyze_block, m)?)?;
         m.add_function(wrap_pyfunction!(analyze_block_at_index, m)?)?;
         m.add_function(wrap_pyfunction!(analyze_region, m)?)?;
+        m.add_function(wrap_pyfunction!(analyze_blocks, m)?)?;
         m.add_function(wrap_pyfunction!(list_blocks, m)?)?;
         m.add_function(wrap_pyfunction!(check_compatibility, m)?)?;
         Ok(())

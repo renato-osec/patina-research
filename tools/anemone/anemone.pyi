@@ -52,6 +52,28 @@ def analyze_block_at_index(bv: Any, fn_addr: int, start_index: int) -> FlowGraph
     instruction index. Cheaper — no address scan."""
 
 
+def analyze_region(
+    bv: Any, fn_addr: int, block_start: int, block_end: int,
+) -> FlowGraph:
+    """Lower a contiguous range of basic blocks `[block_start, block_end)`."""
+
+
+def analyze_blocks(
+    bv: Any, fn_addr: int, block_ids: list[int],
+) -> FlowGraph:
+    """Lower an arbitrary set of basic-block indices into one FlowGraph.
+    Indices may be non-contiguous (inlined fn body lowered to BBs
+    7+12+23). Use for region submissions where the agent groups BBs by
+    source-level meaning."""
+
+
+def list_blocks(
+    bv: Any, fn_addr: int,
+) -> list[tuple[int, int, int, int]]:
+    """`[(idx, start_addr, end_addr, instr_count), ...]` for every basic
+    block in the fn's MLIL-SSA."""
+
+
 def check_compatibility(
     rust_edges: list[tuple[str, str, str]],
     anem: FlowGraph,
