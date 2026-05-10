@@ -25,7 +25,15 @@ body, multi-arg let_, dodged underscore) remain hard rejects.
 5/6 are safe-Rust bodies with actual flow. compute_position
 regressed to extern C wrappers; the safe-Rust enforcement (reject
 on `unsafe fn` / `extern "C" fn` / raw-ptr args/return) is now
-live and a v7 re-run targets just this fn.
+live and a v7 re-run targets just this fn. See `v7_safe_position/`.
+
+## v7_safe_position (single-fn re-run with safe-Rust gate active)
+
+$1.90, 6.3 min wall, 4 submits, 1/1 perfect. Body is now real safe
+Rust: 90+ lines, opaque callees as `fn ... { unimplemented!() }`
+stubs, real control flow, bounds checks, HYPE/ZXQJ asset-name
+detection via 0x45505948/0x4a51585a constants. **All 6 typ targets
+now have real-body safe-Rust recoveries.**
 
 ## Why this works
 
