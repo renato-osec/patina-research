@@ -258,6 +258,18 @@ async def run_stage(spec: StageSpec, args: argparse.Namespace) -> StageArtifacts
                     f"({time.time()-t_save:.1f}s)")
             except Exception as e:
                 log(f"[{name}] save failed: {type(e).__name__}: {e}")
+        # Mirror the sidecar to live next to the output bndb too, so
+        # downstream pipeline.py runs that load the output bndb find
+        # the cross-stage findings without manual copying.
+        if artifacts.saved_bndb:
+            out_sidecar = out_bndb.with_suffix(".patina.json")
+            try:
+                if out_sidecar.resolve() != ctx.recoveries.path.resolve():
+                    import shutil
+                    shutil.copy2(ctx.recoveries.path, out_sidecar)
+                    log(f"[{name}] sidecar mirrored -> {out_sidecar}")
+            except Exception as e:
+                log(f"[{name}] sidecar mirror failed: {e}")
         log(f"[{name}] done in {artifacts.elapsed_s:.1f}s, "
             f"{artifacts.perfect}/{artifacts.targets} perfect, "
             f"{artifacts.failed} failed, "
