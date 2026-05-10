@@ -1,12 +1,4 @@
-# Per-function signature recovery harness.
-#
-# Reads a binja BinaryView, picks one function by address, and asks an
-# LLM agent to propose its Rust source-level signature. The agent has
-# read-only inspection tools (decompile, get_il, stack_vars, xrefs)
-# plus an iterative `check_signature` tool that compares its current
-# guess against the target's actual SysV-x64 register usage via
-# sigcheck (nacre fn ABI ↔ exoskeleton trace). The agent finishes by
-# calling `submit_signature` with its highest-confidence decl.
+# Per-fn Rust signature recovery harness; ABI sigcheck validator.
 from __future__ import annotations
 
 import os
@@ -135,17 +127,8 @@ class SignerResult(AgentResult):
     final_score: float = 0.0      # ground-truth score on the last submission
     final_perfect: bool = False
     submit_attempts: int = 0      # times the agent called submit_signature
-    # True iff `submit_rounds` was exhausted without a perfect submit:
-    # the harness gave up bouncing and accepted the last (failing) decl.
-    # `final_perfect == False and budget_exhausted == True` ⇒ run failed.
-    budget_exhausted: bool = False
-    # Number of times the PreToolUse hook blocked a wide untargeted
-    # decompilation call (`decompile`/`get_il`) BEFORE the first
-    # `check_signature`. High counts = agent leaning on whole-fn decomp
-    # instead of the targeted register_trace/field_accesses/il_around
-    # workflow. `wide_unlocked == False` ⇒ agent never validated, the
-    # gate stayed closed for the whole run.
-    wide_blocks: int = 0
+    budget_exhausted: bool = False  # max_rounds hit without final perfect.
+    wide_blocks: int = 0  # PreToolUse blocks of wide decomp before first check.
     wide_unlocked: bool = False
 
 
@@ -169,16 +152,8 @@ async def sign_function(
     shared_ctx: TargetCtx | None = None,
     trace: bool = False,
 ) -> SignerResult:
-    """Run the signer agent on one function. `prelude` is an optional Rust
-    snippet (struct/use defs) appended to every check_signature call so
-    user types can be looked up by name. `submit_rounds` caps how many
-    times the harness's PostToolUse validator will bounce a non-perfect
-    submission back at the agent for refinement (1 = accept first try)."""
-    # Per-worker fork: writing `shared_ctx.fn_addr = fn_addr` raced
-    # under asyncio - the submit hook would later read whichever addr
-    # the next-scheduled worker stamped, so most recoveries landed in
-    # the wrong sidecar slot (or none at all). `fork` shares bv +
-    # locks + recoveries but gives each call its own fn_addr.
+    """Run signer on one fn. `prelude` appended to each check_signature."""
+    # Per-worker fork: shared fn_addr races under asyncio.
     if shared_ctx is None:
         ctx = TargetCtx(bv=bv, fn_addr=fn_addr)
         owns_ctx = True
@@ -190,15 +165,7 @@ async def sign_function(
     name = f.name if f else f"sub_{fn_addr:x}"
     rec = SignerResult(name=name, address=f"{fn_addr:#x}")
 
-    # Validator the PostToolUse hook calls on every submit_signature
-    # firing. Returns (perfect, feedback, has_warnings, arity_only).
-    #   has_warnings: triggers a free first-round scold (placeholder
-    #     structs / skip-arrays / offset-named fields).
-    #   arity_only: not perfect, BUT the only mismatch is missing-reg
-    #     arity (binary optimized away a small bool/u8 arg). Per the
-    #     SYSTEM rule we accept the submission instead of bouncing,
-    #     since asking the agent to "refine" would push them to drop
-    #     the real arg.
+    # validator returns (perfect, feedback, has_warnings, arity_only, score).
     import sigcheck
     def validator(decl: str) -> tuple[bool, str, bool, bool, float]:
         try:
@@ -214,9 +181,7 @@ async def sign_function(
         )
         return r.perfect, r.summary(), has_warnings, arity_only, float(r.score or 0.0)
 
-    # Pre-dump full asm + HLIL so the submit hook can hand them to the
-    # agent post-first-submit (forced ground-truth context). Best-effort:
-    # any failure falls back to the no-blurb path.
+    # Pre-dump asm + HLIL for the submit hook's post-first blurb.
     try:
         asm_path = str(asm_dump.dump_function_asm(bv, fn_addr, name=name))
     except Exception:
@@ -226,14 +191,8 @@ async def sign_function(
     except Exception:
         hlil_text = None
 
-    # A/B knobs (env-driven so the bench harness can flip them without
-    # code edits): set SIGNER_NO_FORCE_ITERATE=1 to disable the
-    # force-iterate-first-submit bounce; SIGNER_NO_GATE=1 to skip the
-    # PreToolUse wide-tool gate entirely.
-    # Default OFF: force-iterate-first doubled cost on every successful
-    # run (every [OK] paid for 2 submits, the second a no-op
-    # re-submission of identical source). Set
-    # `SIGNER_FORCE_ITERATE_FIRST=1` to opt back in.
+    # Env knobs: SIGNER_FORCE_ITERATE_FIRST=1 enables bounce on first-submit;
+    # SIGNER_NO_GATE=1 skips the PreToolUse wide-tool gate.
     no_force_iter = (os.environ.get("SIGNER_NO_FORCE_ITERATE") == "1"
                      or os.environ.get("SIGNER_FORCE_ITERATE_FIRST") != "1")
     stderr_buf: list[str] = []
@@ -243,14 +202,11 @@ async def sign_function(
         validator=validator, max_rounds=submit_rounds, server_name="signer",
         asm_path=asm_path, hlil=hlil_text,
         force_iterate_first=not no_force_iter,
-        # On every accept branch, write the recovered Rust signature
-        # back to the shared bndb (same primitives as marinator/write).
         apply_ctx=ctx,
     )
     check_tools = t_check.make(bv, fn_addr, prelude=prelude)
     exo_tools   = t_exo.make(bv, fn_addr)
-    # Order matters: register_trace appears first so the agent's prompt
-    # tools_block lists it at the top - it's the recommended first call.
+    # Order: register_trace first so it's the recommended first call.
     tools = exo_tools + t_binja.make(ctx) + check_tools + submit_tools
 
     user_prompt = (
@@ -267,13 +223,7 @@ async def sign_function(
     if submit_hook is not None:
         hooks["PostToolUse"] = [submit_hook]
 
-    # Quick read-only subagent for cross-function context. The parent
-    # spawns it via the `Task` builtin to ask "what does function X do?"
-    # without paying its own context tokens to read whole HLIL. Haiku
-    # model + tight max_turns keep it fast and cheap. The subagent
-    # inherits the same MCP tools (so it can register_trace / decompile
-    # / xrefs across the binary) but doesn't see signer's submit/check
-    # - its only job is to summarize.
+    # Read-only subagent for cross-fn context (haiku, no submit tools).
     inspect_tool_names = sorted(
         {f"mcp__signer__{t.name}" for t in (exo_tools + t_binja.make(ctx))}
     )
@@ -303,15 +253,7 @@ async def sign_function(
         maxTurns=6,
     )
 
-    # Specialist subagent for receiver-type field discovery via the
-    # destructor `core::ptr::drop_in_place::<T>`. The destructor is
-    # the highest-signal pivot for struct recovery - rustc emits one
-    # per type that owns any droppable resource, and its body
-    # dispatches to typed drop_in_place calls for each field. Reading
-    # those gives exact field types (Vec<u8> not "u8 ptr + 2 usize",
-    # HashMap<K,V> not "ctrl/mask/items"). Use this subagent any time
-    # the receiver is a non-trivial struct (anything that has fields
-    # observed past offset 0 with mixed flavors).
+    # Subagent that walks `drop_in_place::<T>` to recover field types.
     destructor_subagent = AgentDefinition(
         description=(
             "Walks the destructor of the receiver type T to extract "
