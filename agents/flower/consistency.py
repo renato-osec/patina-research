@@ -145,6 +145,40 @@ def check(
             f"and address the underlying warning (rename unused vars "
             f"with leading `_`, drop the unused mut, etc)."
         ), False)
+    # Enforce safe-Rust contract on the MAIN fn: no `unsafe fn`, no
+    # `extern "C"` qualifier, no raw-pointer params/return in its
+    # signature. Signer already gave a safe prototype; flower must
+    # use it verbatim. Opaque callees should be declared as safe fn
+    # stubs with `unimplemented!()` bodies, not pulled in via extern.
+    import re as _re
+    main_fn_re = _re.compile(
+        r"(?:pub\s+)?(?:(unsafe)\s+)?(?:(extern\s+\"[^\"]+\")\s+)?"
+        r"fn\s+" + _re.escape(rust_fn_name) + r"\s*\(([^)]*)\)([^{]*)\{",
+        _re.DOTALL,
+    )
+    mf = main_fn_re.search(rust_source)
+    if mf:
+        is_unsafe, is_extern, params, ret = mf.groups()
+        if is_unsafe:
+            return CheckResult(False,
+                f"submission rejected: `unsafe fn {rust_fn_name}` - flower "
+                "submits must be safe Rust. Drop the `unsafe` keyword and "
+                "move any unsafe-needing work into typed helpers with "
+                "`unimplemented!()` bodies.", False)
+        if is_extern:
+            return CheckResult(False,
+                f"submission rejected: `extern \"C\" fn {rust_fn_name}` "
+                "- the main fn must be plain `fn`, not extern. Signer's "
+                "recovered prototype is already safe Rust; copy it "
+                "verbatim and drop the extern qualifier.", False)
+        sig = (params or "") + " " + (ret or "")
+        if "*mut " in sig or "*const " in sig:
+            return CheckResult(False,
+                f"submission rejected: main fn `{rust_fn_name}` signature "
+                "has raw pointers (`*mut` / `*const`). Use signer's "
+                "high-level types verbatim (`&Foo`, `&mut Foo`, `Vec<T>`, "
+                "etc). Raw pointers belong inside opaque-callee stubs, "
+                "not the public prototype.", False)
     # 1. Compile via lymph; with_compiler_errors captures rustc stderr
     #    and appends it to the exception so the agent sees real
     #    diagnostics instead of "rustc driver aborted".

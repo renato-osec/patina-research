@@ -81,12 +81,28 @@ WIN CONDITIONS — what makes a perfect reconstruction:
     already recovered this fn; treat it as a baseline to refine
     (or accept unchanged if already perfect). Don't redo work.
 
+SAFE-RUST CONTRACT (hard requirement):
+  - The main fn MUST use signer's exact prototype, verbatim, with the
+    exact param names + types and the exact return type signer gave.
+    No `extern "C"`, no `unsafe fn` on the main fn, no raw pointers
+    (`*mut T` / `*const T`) in its arguments or return type. If signer
+    typed it `&State`, you write `&State` - not `*const u8`.
+  - The body itself is safe Rust: no `unsafe { ... }` blocks. If you
+    feel the urge to write one, you're modeling at the wrong layer -
+    use the high-level signer types instead of raw memory.
+  - For opaque callees the binary calls (no signer recovery for them),
+    declare a SAFE fn stub in the prelude with placeholder behaviour:
+        fn opaque_callee(x: &Foo) -> Bar { unimplemented!() }
+    The validator only looks at the call signature, not the body, so
+    `unimplemented!()` is fine. NEVER pull them in via `extern "C"`.
+  - For inlined fns (stdlib calls expanded into the body), write the
+    high-level form: `vec.push(x)`, not the lowered RawVec dance.
+
 ANTIPATTERNS:
   - One-to-one transcription of HLIL into Rust. If your output is the
     same length as `decompile`, you've under-reconstructed.
   - Spelling out stdlib internals (RawTableInner / RawVec / Unique) when
-    the matching Vec/HashMap call exists. The dataflow check passes for
-    the high-level form; the verbose form usually fails AND eats tokens.
+    the matching Vec/HashMap call exists.
   - Renaming locals away from HLIL names to dodge the binding check.
     Use the `_` prefix for genuinely unused vars; renaming-to-bypass
     leaves the validator bouncing forever.
