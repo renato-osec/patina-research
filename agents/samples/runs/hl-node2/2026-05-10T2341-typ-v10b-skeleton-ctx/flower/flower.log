@@ -1,0 +1,25 @@
+[flower] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] compute_margin_requirement_by_mode  [OK]  source='pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=11 iters=12 $0.914 t=235.7s  cov=0/33 regions=0
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] build_adl_candidate_set  [imperfect]  source=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=24 iters=25 $1.548 t=277.4s  cov=0/96 regions=0
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_position_liquidation_check  [OK]  source='#[derive(Default, Clone)]\npub struct LiqOutcome {\n    pub status: u64,\n    pub payload: u64,\n    pub margin: u64,\n}\n\npub'  final_score=1.00  perfect=True  exhausted=False  submits=3  tools=22 iters=23 $2.204 t=462.1s  cov=0/23 regions=0
+[done ] compute_user_margin_and_shortfall  [imperfect]  source=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=24 iters=25 $1.440 t=251.7s  cov=0/44 regions=0
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [FAILED]  source='pub struct Clearinghouse { _data: [u64; 2700] }\n\nfn num_markets(_c: &Clearinghouse) -> u64 { unimplemented!() }\nfn marke'  final_score=0.99  perfect=False  exhausted=True  submits=5  tools=25 iters=26 $2.079 t=374.9s  cov=0/67 regions=0
+[done ] clearinghouse_adl_orchestrator  [FAILED]  source='use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, '  final_score=0.96  perfect=False  exhausted=True  submits=5  tools=25 iters=25 $2.451 t=450.3s  cov=0/610 regions=0
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v10b_skeleton_ctx/flower.fault (fd=10)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v10b_skeleton_ctx/hl-node2.warped.marinated.signed.flowered.bndb (2.3s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v10b_skeleton_ctx/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 1230.3s, 2/6 perfect, 2 failed, 211,769 tokens, $10.636, output outputs/chain_typ_v10b_skeleton_ctx/flower.json
