@@ -1,0 +1,28 @@
+[flower] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] build_adl_candidate_set  [OK]  source='pub struct Exchange { data: [u8; 0xa20] }\n\npub fn build_adl_candidate_set(exchange: &Exchange) -> Vec<u64> {\n    let _ ='  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=10 iters=11 $0.452 t=73.5s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_margin_requirement_by_mode  [imperfect]  source='pub fn compute_margin_requirement_by_mode(\n    result: *mut i64,\n    pos: *const i64,\n    oracle_px_ptr: *const i64,\n   '  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=21 iters=13 $0.764 t=162.6s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  [imperfect]  source='pub struct Clearinghouse;\npub struct UserState;\npub struct OracleData;\npub struct MarginResult;\n\npub fn compute_user_mar'  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=16 iters=13 $0.869 t=198.7s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_adl_ranking_score @ 0x555556abb140
+[done ] compute_position_liquidation_check  [imperfect]  source='#![allow(unused, non_snake_case, non_camel_case_types, unused_mut, unused_assignments, unused_variables)]\n\n#[repr(C)] pu'  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=19 iters=13 $1.128 t=396.2s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [FAILED]  source='#![allow(unused, non_snake_case, non_camel_case_types)]\n\n#[inline(never)] fn compute_margin_requirement_by_mode(_out: &m'  final_score=0.00  perfect=False  exhausted=True  submits=4  tools=20 iters=13 $0.777 t=167.4s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[done ] clearinghouse_adl_orchestrator  [imperfect]  source='#[repr(C)]\npub struct BTreeMap24 { pub a: u128, pub b: u64 }\n\n#[repr(C)]\npub struct Clearinghouse { _pad: [u8; 0x400] }\n'  final_score=0.00  perfect=False  exhausted=False  submits=1  tools=17 iters=13 $0.657 t=123.6s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v2/flower/flower.fault (fd=10)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/flower/hl-node2.warped.marinated.signed.flowered.bndb (2.6s)
+[flower] done in 594.5s, 1/6 perfect, 1 failed, 70,911 tokens, $4.646, output outputs/chain_typ_v2/flower/flower.json

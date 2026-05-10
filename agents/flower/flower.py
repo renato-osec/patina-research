@@ -10,7 +10,7 @@ sys.path[:0] = [str(Path(__file__).resolve().parent),
 os.environ.setdefault("BN_DISABLE_USER_PLUGINS", "1")
 
 import asyncio
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import binaryninja as bn
 from claude_agent_sdk import query
@@ -209,6 +209,9 @@ class FlowerResult(AgentResult):
     compression_ratio: float = 0.0
     wide_blocks: int = 0
     wide_unlocked: bool = False
+    regions: list = field(default_factory=list)  # per-region BB->Rust snippets
+    complexity_gated: bool = False
+    signer_bounced: bool = False
 
 
 def transcript_path(rec: "FlowerResult", cwd: str | None = None) -> Path | None:
@@ -456,6 +459,9 @@ async def sign_function(
 
     rec.submitted_source = captured.get("source", "")
     rec.submitted_name = captured.get("name", "")
+    rec.regions = list(captured.get("regions") or [])
+    rec.complexity_gated = bool(captured.get("complexity_gated"))
+    rec.signer_bounced = bool(captured.get("signer_bounced"))
     rec.confidence = captured["confidence"]
     rec.rationale = captured["rationale"]
     rec.submit_attempts = captured["attempts"]

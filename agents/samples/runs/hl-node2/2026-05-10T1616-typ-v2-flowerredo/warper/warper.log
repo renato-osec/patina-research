@@ -1,0 +1,7 @@
+[warper] sigs: ['rust-1.83.0-all.warp']
+[warper] loading /home/renny/hl-node2.bndb
+[warper] 795/20444 named pre-WARP
+[warper] container='User'
+[warper] add_source rust-1.83.0-all.warp -> 1d8f88b1-f66a-531e-812d-d837a8b3f801
+[warper] 795/20444 named post-WARP (applied 172 match(es) from 1 sig(s))
+[warper] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb

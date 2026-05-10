@@ -1,0 +1,18 @@
+[signer] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] build_adl_candidate_set  [OK]  decl='pub struct Exchange { data: [u8; 0xa20] }\n\n(this: &Exchange) -> Vec<u64>'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=32 iters=12 $0.951 t=286.0s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_margin_requirement_by_mode  ERROR: timeout after 300s  (305.3s)
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_position_liquidation_check  ERROR: timeout after 300s  (305.3s)
+[done ] compute_user_margin_and_shortfall  ERROR: timeout after 300s  (305.4s)
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  ERROR: timeout after 300s  (305.3s)
+[done ] clearinghouse_adl_orchestrator  ERROR: timeout after 300s  (305.6s)
+[signer] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/marinator/hl-node2.warped.marinated.patina.json
+[signer] faulthandler armed -> outputs/chain_typ_v2/signer/signer.fault (fd=11)
+[signer] analysis drained in 0.1s
+[signer] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/signer/hl-node2.warped.marinated.signed.bndb (2.6s)
+[signer] done in 917.7s, 2/6 perfect, 0 failed, 13,969 tokens, $0.951, output outputs/chain_typ_v2/signer/signer.json

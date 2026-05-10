@@ -1,0 +1,224 @@
+{
+  "elapsed_s": 1035.5,
+  "targets": 6,
+  "perfect": 0,
+  "failed": 0,
+  "tokens": [
+    98,
+    90150
+  ],
+  "cost_usd_total": 2.8021,
+  "results": [
+    {
+      "name": "build_adl_candidate_set",
+      "address": "0x555556266b10",
+      "tool_calls": 9,
+      "iter_count": 10,
+      "elapsed_s": 177.0,
+      "input_tokens": 19,
+      "output_tokens": 8796,
+      "cache_read_tokens": 233523,
+      "cache_create_tokens": 37420,
+      "cost_usd": 0.3428799,
+      "error": "",
+      "transport_error": "",
+      "session_id": "43ce3e80-85a3-497f-ba2f-a59a4e799052",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 4,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 3,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 1,
+        "rename_variable": 2,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=96"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/43ce3e80-85a3-497f-ba2f-a59a4e799052.jsonl"
+    },
+    {
+      "name": "compute_margin_requirement_by_mode",
+      "address": "0x555556b61a50",
+      "tool_calls": 13,
+      "iter_count": 13,
+      "elapsed_s": 477.1,
+      "input_tokens": 20,
+      "output_tokens": 30716,
+      "cache_read_tokens": 437373,
+      "cache_create_tokens": 59714,
+      "cost_usd": 0.8164473999999999,
+      "error": "",
+      "transport_error": "sdk: Exception: Command failed with exit code 1 (exit code: 1)\nError output: Check stderr output for details",
+      "session_id": "bb829de0-2424-41cf-9845-fc9be4006a3a",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 22,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 1,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 2,
+        "stack_vars": 2,
+        "Bash": 1,
+        "rename_variables": 5,
+        "set_function_comment": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=33"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/bb829de0-2424-41cf-9845-fc9be4006a3a.jsonl"
+    },
+    {
+      "name": "compute_user_margin_and_shortfall",
+      "address": "0x555556bb4fb0",
+      "tool_calls": 6,
+      "iter_count": 7,
+      "elapsed_s": 286.6,
+      "input_tokens": 12,
+      "output_tokens": 16048,
+      "cache_read_tokens": 154755,
+      "cache_create_tokens": 31447,
+      "cost_usd": 0.40563775,
+      "error": "",
+      "transport_error": "",
+      "session_id": "48bb069c-45e8-490a-bc67-b77263d2d63f",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 12,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 1,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 1,
+        "set_function_comment": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=44"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/48bb069c-45e8-490a-bc67-b77263d2d63f.jsonl"
+    },
+    {
+      "name": "compute_adl_ranking_score",
+      "address": "0x555556abb140",
+      "tool_calls": 9,
+      "iter_count": 10,
+      "elapsed_s": 271.7,
+      "input_tokens": 16,
+      "output_tokens": 15392,
+      "cache_read_tokens": 268737,
+      "cache_create_tokens": 37874,
+      "cost_usd": 0.4540875999999999,
+      "error": "",
+      "transport_error": "",
+      "session_id": "29e2e9cc-19b0-40c8-8e68-4e7ca9066254",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 6,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 1,
+        "types_declared": 0,
+        "notes": "Renamed arg2->user_address, arg3->market_idx, arg4->is_long, var_1b8->mkt_oracle_px_unit, var_168->iso_margin_tag, var_160->iso_margin_value. var_70/var_68 (cross-margin branch temporaries) not exposed for rename by BN. Added one-line function comment summarising ADL score formula and BTree lookup."
+      },
+      "tool_counts": {
+        "ToolSearch": 2,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 1,
+        "rename_variable": 2,
+        "set_function_comment": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=67"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/29e2e9cc-19b0-40c8-8e68-4e7ca9066254.jsonl"
+    },
+    {
+      "name": "clearinghouse_adl_orchestrator",
+      "address": "0x555556ac3850",
+      "tool_calls": 13,
+      "iter_count": 13,
+      "elapsed_s": 197.2,
+      "input_tokens": 16,
+      "output_tokens": 10069,
+      "cache_read_tokens": 375538,
+      "cache_create_tokens": 65502,
+      "cost_usd": 0.5098839000000001,
+      "error": "",
+      "transport_error": "sdk: Exception: Command failed with exit code 1 (exit code: 1)\nError output: Check stderr output for details",
+      "session_id": "253794d1-5642-45ad-bc19-a4ab7d5178ae",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 0,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0,
+        "_fallback": true
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 1,
+        "stack_vars": 1,
+        "Bash": 10
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=610"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/253794d1-5642-45ad-bc19-a4ab7d5178ae.jsonl"
+    },
+    {
+      "name": "compute_position_liquidation_check",
+      "address": "0x555556beadd0",
+      "tool_calls": 9,
+      "iter_count": 10,
+      "elapsed_s": 175.3,
+      "input_tokens": 15,
+      "output_tokens": 9129,
+      "cache_read_tokens": 203734,
+      "cache_create_tokens": 19876,
+      "cost_usd": 0.27313719999999997,
+      "error": "",
+      "transport_error": "",
+      "session_id": "f2b4b197-f4a0-4fc6-be14-e5999c0f6522",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v2/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 14,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 3,
+        "stack_vars": 1,
+        "rename_variables": 3,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=23"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/f2b4b197-f4a0-4fc6-be14-e5999c0f6522.jsonl"
+    }
+  ]
+}

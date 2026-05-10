@@ -1,0 +1,13 @@
+{
+  "0x555556266b10": {
+    "flower": {
+      "name": "build_adl_candidate_set",
+      "source": "pub struct Exchange { data: [u8; 0xa20] }\n\npub fn build_adl_candidate_set(exchange: &Exchange) -> Vec<u64> {\n    let _ = exchange;\n    Vec::new()\n}"
+    },
+    "signer": {
+      "name": "build_adl_candidate_set",
+      "rust_signature": "(this: &Exchange) -> Vec<u64>",
+      "rust_types": "pub struct Exchange { data: [u8; 0xa20] }"
+    }
+  }
+}
