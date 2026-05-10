@@ -458,14 +458,50 @@ async def sign_function(
     # Order: register_trace first so it's the recommended first call.
     tools = exo_tools + t_binja.make(ctx) + check_tools + submit_tools
 
-    user_prompt = (
-        f"Reconstruct the Rust body of `{name}` at {fn_addr:#x}. "
-        f"Call `il_vars` first for the binding vocabulary, then iterate "
-        f"via `check_reconstruction`, then `submit_reconstruction`."
-    )
-    # Inline prior-stage findings so the agent doesn't have to query.
+    # Pull signer's recovery to build a copy-paste skeleton. If present,
+    # we hand the agent prelude + types + signature pre-filled and frame
+    # the task as 'complete the body'. Removes the chance to mismatch
+    # the signature or invent struct shapes.
+    sig_info, types_info = ("", "")
+    if ctx.recoveries is not None:
+        _sg = ctx.recoveries.get(fn_addr, "signer") or {}
+        sig_info = _sg.get("rust_signature", "") or ""
+        types_info = _sg.get("rust_types", "") or ""
+
+    if sig_info:
+        skeleton_lines: list[str] = []
+        if types_info.strip():
+            skeleton_lines.append(types_info.rstrip())
+            skeleton_lines.append("")
+        skeleton_lines.append(
+            f"pub fn {rust_fn_name}{sig_info.strip()} {{")
+        skeleton_lines.append("    // YOUR BODY HERE")
+        skeleton_lines.append("}")
+        skeleton = "\n".join(skeleton_lines)
+        user_prompt = (
+            f"Complete the body of `{name}` at {fn_addr:#x}.\n\n"
+            "The prelude, struct definitions, and fn signature below are "
+            "signer's recovery and MUST be preserved verbatim. Your job "
+            "is only the body between the braces.\n\n"
+            f"```rust\n{skeleton}\n```\n\n"
+            "Workflow: `il_vars` once to learn the HLIL var names; iterate "
+            "via `check_reconstruction` or `check_region`; submit via "
+            "`submit_reconstruction` with the FULL source (skeleton + "
+            "your body). The validator rejects any submission whose "
+            "fn signature differs from the skeleton or whose struct "
+            "definitions differ from the prelude."
+        )
+    else:
+        user_prompt = (
+            f"Reconstruct the Rust body of `{name}` at {fn_addr:#x}. "
+            "Signer has not recovered this fn's prototype - infer both "
+            "signature and types from HLIL. Call `il_vars` first, then "
+            "iterate via `check_reconstruction`, then `submit_reconstruction`."
+        )
+    # Optional supplementary prior-stage block (formatted nicely) for
+    # readers; also useful for fns with extra metadata beyond signer.
     prior_block = _format_prior(ctx.recoveries, fn_addr) if ctx.recoveries else ""
-    if prior_block:
+    if prior_block and not sig_info:
         user_prompt += "\n\n" + prior_block
     user_prompt += format_context_dir(context_dir)
 
