@@ -310,7 +310,9 @@ async def marinate_function(
     user_prompt += format_context_dir(context_dir)
 
     stream = query(prompt=user_prompt, options=a._build_options(env=_CLI_ENV_SCRUB))
-    await run_with_timeout(_drive(stream, rec, quiet=quiet), rec, PER_FN_TIMEOUT_S)
+    from cli import scale_timeout_by_bbs
+    budget = scale_timeout_by_bbs(PER_FN_TIMEOUT_S, f)
+    await run_with_timeout(_drive(stream, rec, quiet=quiet), rec, budget)
     rec.summary = captured.get("summary")
     if rec.summary is None and rec.tool_counts:
         c = rec.tool_counts
