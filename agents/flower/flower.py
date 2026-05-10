@@ -222,6 +222,69 @@ def transcript_path(rec: "FlowerResult", cwd: str | None = None) -> Path | None:
 PER_FN_TIMEOUT_S = per_fn_timeout(default_s=300)
 
 
+_NONTRIVIAL_HINTS = ("HashMap", "BTreeMap", "Vec<", "VecDeque", "Box<",
+                     "Rc<", "Arc<", "String", "HashSet", "BTreeSet")
+
+
+def _detect_nontrivial_struct(rust_types: str) -> str | None:
+    """If `rust_types` defines a struct with at least one non-trivial
+    field (heap-owning Rust type), return its name. None otherwise."""
+    if not rust_types:
+        return None
+    import re as _re
+    for m in _re.finditer(r"\bstruct\s+([A-Z][A-Za-z0-9_]*)\s*\{([^}]*)\}",
+                          rust_types):
+        body = m.group(2)
+        if any(h in body for h in _NONTRIVIAL_HINTS):
+            return m.group(1)
+    return None
+
+
+async def _destructor_preflight(bv, fn_addr, ctx, struct_name: str,
+                                prior_block: str, model: str = "haiku") -> str:
+    """One-shot destructor walk before flower's main agent starts. Returns
+    the subagent's final text or empty on failure. Same prompt as the
+    Task-spawnable destructor_subagent, just always-on."""
+    pre_tools = t_exo.make(bv, fn_addr) + t_binja.make(ctx)
+    pre_block = tools_block(pre_tools, extra_lines=[])
+    sys_prompt = (
+        "You walk Rust destructors to extract exact field types of a "
+        "struct T. Names can be stripped; don't rely on drop_in_place "
+        "symbol matching alone. Find the destructor via xrefs/HLIL "
+        "shape (single ptr arg, early null-guard, sequence of "
+        "[rdi+0xN] -> sub-callee dispatch ending in __rust_dealloc). "
+        "For each [rdi+0xN] dispatch identify the field type from "
+        "the callee's shape: 3 loads + dealloc(size*cap)=Vec<T>; "
+        "ctrl/mask + iter + dealloc=HashMap<K,V>; ptr+len+cap with "
+        "u8/UTF8=String else Vec<u8>; single ptr to dealloc=Box<T>. "
+        "Fields with no drop dispatch are Copy/trivial. Return ONE "
+        "LINE PER FIELD: `+0x{N}: <type>`. Plus `destructor: <addr>` "
+        "and `total drops: N`. If no destructor candidate is found "
+        "after 2-3 xref/structural attempts, return `T appears "
+        "Copy/trivial - no destructor found`. Don't speculate.\n\n"
+        f"Tools:\n{pre_block}"
+    )
+    user = (
+        f"Walk the destructor of T = `{struct_name}`, receiver of the "
+        f"function at {fn_addr:#x}. Return the field map.\n\n{prior_block}"
+    )
+    a = Agent(
+        name="destructor_pre",
+        system_prompt=sys_prompt,
+        tools=pre_tools,
+        allowed_builtins=["Read", "Grep", "Glob", "Bash"],
+        model=model,
+        max_turns=10,
+    )
+    try:
+        return await asyncio.wait_for(
+            a.run(user, env=CLI_ENV_SCRUB),
+            timeout=180,
+        )
+    except Exception as e:
+        return f"# destructor preflight failed: {type(e).__name__}: {e}"
+
+
 def _loc(text: str) -> int:
     """Non-blank, non-comment line count. Used for the brevity ratio."""
     n = 0
@@ -316,6 +379,26 @@ async def sign_function(
     if prior_block:
         user_prompt += "\n\n" + prior_block
     user_prompt += format_context_dir(context_dir)
+
+    # Auto-spawn destructor walker if signer recovered a non-trivial struct.
+    signer_types = ""
+    if ctx.recoveries is not None:
+        signer_types = (ctx.recoveries.get(fn_addr, "signer") or {}).get(
+            "rust_types", "")
+    struct_name = _detect_nontrivial_struct(signer_types)
+    if struct_name:
+        print(f"[flower] preflight destructor walk: T={struct_name} @ "
+              f"{fn_addr:#x}", flush=True)
+        walk = await _destructor_preflight(
+            bv, fn_addr, ctx, struct_name, prior_block)
+        if walk:
+            user_prompt += (
+                f"\n\n=== preflight destructor walk for `{struct_name}` ===\n"
+                f"{walk}\n=== end preflight ===\n"
+                "These offsets/types come from the destructor body and "
+                "are AUTHORITATIVE. Use them verbatim in your "
+                "reconstruction; do NOT redefine the struct."
+            )
     if no_gate:
         gate_state = {"unlocked": True, "blocks": 0}
         hooks: dict = {}
