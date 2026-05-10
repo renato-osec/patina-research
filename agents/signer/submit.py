@@ -92,33 +92,32 @@ def make(
 
     qualified = f"mcp__{server_name}__submit_signature"
 
+    def _write_sidecar(types: str, sig: str, agent_name: str,
+                       score: float) -> None:
+        """Persist the agent's submission to the cross-stage sidecar.
+        Always runs regardless of score - downstream stages need the
+        Rust handoff even when the bv apply was rejected. Records the
+        score so a consumer can decide how much to trust it."""
+        if apply_ctx is None or apply_ctx.recoveries is None:
+            return
+        if not sig.strip():
+            return
+        try:
+            fn_now = apply_ctx.target_func()
+            apply_ctx.recoveries.update(
+                apply_ctx.fn_addr, "signer",
+                rust_types=types, rust_signature=sig,
+                name=agent_name or (fn_now.name if fn_now else ""),
+                score=float(score))
+        except Exception as e:
+            print(f"[signer] recoveries.update failed @ "
+                  f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
+                  flush=True)
+
     async def _apply_to_bv(types: str, sig: str, agent_name: str) -> str:
-        """Translate `(types, sig)` -> C via nacre.c_signature and apply
-        to the shared bndb. Mirrors marinator/write.py's primitives:
-        parse_types_from_string + define_user_type for the struct
-        catalog, parse_type_string + f.type/reanalyze for the prototype,
-        all under ctx.write_lock + bv.undoable_transaction(). When
-        `agent_name` is non-empty the function is renamed first so the
-        prototype binds to the agent's chosen symbol. Returns a short
-        status string for the captured record. No-op when apply_ctx is
-        None or the submission is empty.
-        """
+        """Apply (types, sig) to the bv via nacre. Score-gated by caller."""
         if apply_ctx is None or not sig.strip():
             return "skip: no apply_ctx" if apply_ctx is None else "skip: empty sig"
-        # Sidecar write is unconditional and FIRST: nacre often fails
-        # on stdlib types (Box<[u8]>, &str -> String), and downstream
-        # stages only need the Rust sig, not the bv-applied C decl.
-        if apply_ctx.recoveries is not None:
-            try:
-                fn_now = apply_ctx.target_func()
-                apply_ctx.recoveries.update(
-                    apply_ctx.fn_addr, "signer",
-                    rust_types=types, rust_signature=sig,
-                    name=agent_name or (fn_now.name if fn_now else ""))
-            except Exception as e:
-                print(f"[signer] recoveries.update failed @ "
-                      f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
-                      flush=True)
         try:
             import nacre
         except Exception as e:
@@ -215,6 +214,9 @@ def make(
         captured["attempts"] += 1
         attempt = captured["attempts"]
         captured["validations"].append((decl, perfect, feedback))
+        # Sidecar write is unconditional - keeps the Rust handoff for
+        # downstream stages even when the bv apply gets rejected below.
+        _write_sidecar(types, sig, agent_name, score)
 
         async def _accept_or_reject() -> str:
             if score >= APPLY_SCORE_THRESHOLD:
