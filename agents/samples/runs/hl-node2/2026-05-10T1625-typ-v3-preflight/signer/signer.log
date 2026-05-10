@@ -1,0 +1,25 @@
+[signer] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] build_adl_candidate_set  [imperfect]  decl=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=38 iters=13 $0.873 t=228.3s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_position_liquidation_check  [OK]  decl="use std::collections::HashMap;\n\npub struct AssetInfo {\n    market_state: u128,\n    extra: u64,\n}\n\npub struct OracleAsset {\n    by_name: HashMap<String, u64>,\n    history: Vec<u64>,\n    open_interest: u64,\n    cumulative: u64,\n    user_id: u64,\n    leverage_extras: Vec<u64>,\n    assets: &'static [AssetEntry],\n}\n\npub struct AssetEntry {\n    body: [u64; 26],\n}\n\npub struct PositionItem {\n    body: [u64; 25],\n}\n\npub struct Clearinghouse {\n    head: u64,\n    positions: &'static [PositionItem],\n}\n\npub enum LiquidationCheck {\n    Margin { unit: u64, value: u64 },\n    None,\n    Capped { value: u64 },\n}\n\n(position: &OracleAsset, oracle_price: u64, asset_info: &AssetInfo, clearinghouse: &Clearinghouse) -> LiquidationCheck"  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=26 iters=20 $1.309 t=473.5s
+[done ] compute_margin_requirement_by_mode  [imperfect]  decl=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=54 iters=13 $2.069 t=821.5s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  [OK]  decl='use std::collections::BTreeMap;\npub struct UnitQty { pub unit: u64, pub hi: i64, pub lo: u64 }\npub struct MarginAndShortfall {\n    pub equity: Option<UnitQty>,\n    pub margin_req: Option<UnitQty>,\n    pub abs_notional: Option<UnitQty>,\n    pub raw_equity: Option<UnitQty>,\n}\npub struct AssetPosition {\n    pub coin: u64,\n    pub szi: i64,\n    pub entry_px: u64,\n    pub leverage: u64,\n    pub liq_px: u64,\n    pub margin: u64,\n    pub funding: i64,\n    pub flags: u64,\n}\npub struct UserState {\n    pub equity: UnitQty,\n    pub raw_equity: UnitQty,\n    pub positions: BTreeMap<u64, AssetPosition>,\n}\npub struct OracleData {\n    pub _0: u64,\n    pub mark_px: u64,\n    pub oracle_px: u64,\n}\n\n(user: &UserState, oracle: &OracleData) -> MarginAndShortfall'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=20 iters=12 $0.565 t=163.9s
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] clearinghouse_adl_orchestrator  [OK]  decl='use std::collections::{BTreeMap, HashMap};\n\npub struct Clearinghouse { data: [u8; 0x300] }\npub struct AdlFillCtx { data: [u8; 0x60] }\n\n(ch: &Clearinghouse, fill_ctx: &mut AdlFillCtx, ranking_ctx: &mut HashMap<u64, u64>, deferred_users: &Vec<[u8; 20]>) -> BTreeMap<(u64, u8), Vec<u8>>'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=24 iters=20 $2.065 t=547.1s
+[done ] compute_adl_ranking_score  [imperfect]  decl=''  final_score=0.00  perfect=False  exhausted=False  submits=0  tools=52 iters=13 $1.625 t=627.3s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[signer] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/marinator/hl-node2.warped.marinated.patina.json
+[signer] faulthandler armed -> outputs/chain_typ_v3/signer/signer.fault (fd=11)
+[signer] analysis drained in 0.1s
+[signer] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/signer/hl-node2.warped.marinated.signed.bndb (2.0s)
+[signer] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/signer/hl-node2.warped.marinated.signed.patina.json
+[signer] done in 1613.0s, 3/6 perfect, 0 failed, 183,888 tokens, $8.506, output outputs/chain_typ_v3/signer/signer.json

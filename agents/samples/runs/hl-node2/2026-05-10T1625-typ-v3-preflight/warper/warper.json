@@ -1,0 +1,11 @@
+{
+  "elapsed_s": 23.1,
+  "sigs": [
+    "/home/renny/doc/work/research/patina/agents/warper/sigs/rust-1.83.0-all.warp"
+  ],
+  "registered": 1,
+  "applied": 172,
+  "named_pre": 795,
+  "named_post": 795,
+  "total_fns": 20444
+}

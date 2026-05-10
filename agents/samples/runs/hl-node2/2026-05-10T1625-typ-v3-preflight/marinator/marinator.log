@@ -1,0 +1,21 @@
+[marinator] 6 targets, workers=2, model=sonnet
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] compute_margin_requirement_by_mode  {"renamed_vars": 8, "renamed_funcs": 0, "retypes": 0, "comments": 1, "types_declared": 0}  tools=11 iters=12 $0.392 t=262.9s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] build_adl_candidate_set  {"renamed_vars": 16, "renamed_funcs": 0, "retypes": 0, "comments": 1, "types_declared": 0}  tools=8 iters=9 $0.427 t=288.4s
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  {"renamed_vars": 3, "renamed_funcs": 0, "retypes": 0, "comments": 1, "types_declared": 0}  tools=8 iters=9 $0.237 t=141.2s
+[start] compute_adl_ranking_score @ 0x555556abb140
+[done ] compute_position_liquidation_check  {"renamed_vars": 13, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0, "notes": "Renamed: margin_buf (working 128-bit OptionUnitQty buffer), market_state_opt (oracle/market OptionUnitQty passed to compute_per_position_liq_margin), none_result_hi/none_result_val (static None sentinel tag+unit and value written to result), liq_tag/liq_tag_1 (tag field of liq margin result), liq_unit/liq_unit_1 (unit field), asset_extra (*(asset_info+0x10) in spot early-return path), oracle_entry_buf (128-bit scratch for oracle entry data), asset_name_len (name string length for HYPE/ZXQJ check), min_margin_ptr (pointer to min(computed, floor_10e16) result). Existing good names preserved: oracle_price, oracle_entries_ptr, oracle_stride_offset, asset_info, position, clearinghouse, result, margin_value_*, asset_name_ptr, compute_per_position_liq_margin."}  tools=10 iters=11 $0.451 t=327.3s
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] clearinghouse_adl_orchestrator  {"renamed_vars": 0, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0, "_fallback": true}  tools=14 iters=13 $0.200 t=66.1s
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[done ] compute_adl_ranking_score  {"renamed_vars": 7, "renamed_funcs": 0, "retypes": 0, "prototype_changes": 1, "comments": 1, "types_declared": 0}  tools=9 iters=10 $0.504 t=307.7s
+[marinator] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/warper/hl-node2.warped.patina.json
+[marinator] faulthandler armed -> outputs/chain_typ_v3/marinator/marinator.fault (fd=10)
+[marinator] analysis drained in 17.1s
+[marinator] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/marinator/hl-node2.warped.marinated.bndb (2.0s)
+[marinator] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/marinator/hl-node2.warped.marinated.patina.json
+[marinator] done in 737.3s, 0/6 perfect, 0 failed, 74,320 tokens, $2.210, output outputs/chain_typ_v3/marinator/marinator.json

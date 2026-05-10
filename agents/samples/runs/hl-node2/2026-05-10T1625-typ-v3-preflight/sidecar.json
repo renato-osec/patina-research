@@ -1,0 +1,26 @@
+{
+  "0x555556ac3850": {
+    "signer": {
+      "name": "clearinghouse_adl_orchestrator",
+      "rust_signature": "(ch: &Clearinghouse, fill_ctx: &mut AdlFillCtx, ranking_ctx: &mut HashMap<u64, u64>, deferred_users: &Vec<[u8; 20]>) -> BTreeMap<(u64, u8), Vec<u8>>",
+      "rust_types": "use std::collections::{BTreeMap, HashMap};\n\npub struct Clearinghouse { data: [u8; 0x300] }\npub struct AdlFillCtx { data: [u8; 0x60] }",
+      "score": 1.0
+    }
+  },
+  "0x555556bb4fb0": {
+    "signer": {
+      "name": "compute_user_margin_and_shortfall",
+      "rust_signature": "(user: &UserState, oracle: &OracleData) -> MarginAndShortfall",
+      "rust_types": "use std::collections::BTreeMap;\npub struct UnitQty { pub unit: u64, pub hi: i64, pub lo: u64 }\npub struct MarginAndShortfall {\n    pub equity: Option<UnitQty>,\n    pub margin_req: Option<UnitQty>,\n    pub abs_notional: Option<UnitQty>,\n    pub raw_equity: Option<UnitQty>,\n}\npub struct AssetPosition {\n    pub coin: u64,\n    pub szi: i64,\n    pub entry_px: u64,\n    pub leverage: u64,\n    pub liq_px: u64,\n    pub margin: u64,\n    pub funding: i64,\n    pub flags: u64,\n}\npub struct UserState {\n    pub equity: UnitQty,\n    pub raw_equity: UnitQty,\n    pub positions: BTreeMap<u64, AssetPosition>,\n}\npub struct OracleData {\n    pub _0: u64,\n    pub mark_px: u64,\n    pub oracle_px: u64,\n}",
+      "score": 1.0
+    }
+  },
+  "0x555556beadd0": {
+    "signer": {
+      "name": "compute_position_liquidation_check",
+      "rust_signature": "(position: &OracleAsset, oracle_price: u64, asset_info: &AssetInfo, clearinghouse: &Clearinghouse) -> LiquidationCheck",
+      "rust_types": "use std::collections::HashMap;\n\npub struct AssetInfo {\n    market_state: u128,\n    extra: u64,\n}\n\npub struct OracleAsset {\n    by_name: HashMap<String, u64>,\n    history: Vec<u64>,\n    open_interest: u64,\n    cumulative: u64,\n    user_id: u64,\n    leverage_extras: Vec<u64>,\n    assets: &'static [AssetEntry],\n}\n\npub struct AssetEntry {\n    body: [u64; 26],\n}\n\npub struct PositionItem {\n    body: [u64; 25],\n}\n\npub struct Clearinghouse {\n    head: u64,\n    positions: &'static [PositionItem],\n}\n\npub enum LiquidationCheck {\n    Margin { unit: u64, value: u64 },\n    None,\n    Capped { value: u64 },\n}",
+      "score": 1.0
+    }
+  }
+}

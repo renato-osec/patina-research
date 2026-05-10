@@ -1,0 +1,19 @@
+[flower] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] build_adl_candidate_set  [FAILED]  source='#![allow(dead_code)]\n\n#[repr(C)]\npub struct BTreeMap24 {\n    pub a: [u64; 2],\n    pub root: *mut u8,\n}\n\nextern "C" {\n   '  final_score=0.99  perfect=False  exhausted=True  submits=3  tools=13 iters=14 $0.552 t=90.7s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_margin_requirement_by_mode  [FAILED]  source='#![allow(dead_code)]\n\n#[no_mangle]\npub unsafe extern "C" fn compute_margin_requirement_by_mode(\n    result: *mut [i64; 1'  final_score=1.00  perfect=False  exhausted=True  submits=3  tools=13 iters=14 $0.773 t=175.2s
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  [FAILED]  source='use std::collections::BTreeMap;\npub struct UnitQty { pub unit: u64, pub hi: i64, pub lo: u64 }\npub struct MarginAndShort'  final_score=0.99  perfect=False  exhausted=True  submits=3  tools=12 iters=13 $0.562 t=99.2s
+[start] compute_adl_ranking_score @ 0x555556abb140
+[done ] compute_position_liquidation_check  [FAILED]  source='use std::collections::HashMap;\n\npub struct AssetInfo {\n    market_state: u128,\n    extra: u64,\n}\n\npub struct OracleAsset'  final_score=0.00  perfect=False  exhausted=True  submits=3  tools=12 iters=13 $1.050 t=253.3s
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [FAILED]  source='use std::ptr;\n\nfn compute_adl_ranking_score(clearinghouse_ptr: *mut u8, user_key: *mut u8, market_idx: i64, is_long: boo'  final_score=0.97  perfect=False  exhausted=True  submits=3  tools=12 iters=13 $0.399 t=79.3s
+[done ] clearinghouse_adl_orchestrator  [FAILED]  source='use std::collections::{BTreeMap, HashMap};\n\npub struct Clearinghouse { data: [u8; 0x300] }\npub struct AdlFillCtx { data:'  final_score=0.88  perfect=False  exhausted=True  submits=3  tools=15 iters=16 $0.499 t=80.2s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v3/flower/flower.fault (fd=12)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/flower/hl-node2.warped.marinated.signed.flowered.bndb (2.0s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v3/flower/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 492.9s, 0/6 perfect, 6 failed, 56,970 tokens, $3.834, output outputs/chain_typ_v3/flower/flower.json
