@@ -220,6 +220,35 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
             return _err(f"check_reconstruction failed: {type(e).__name__}: {e}")
         return _ok(_format(r, rust_fn_name))
 
+    @tool("warp_callees",
+          "List the target function's direct callees whose binja name is "
+          "WARP-recovered (contains `::` or starts with `_Z`). These are "
+          "stdlib fns whose body you should NEVER inline - declare a "
+          "safe stub in your prelude with the canonical signature and "
+          "call it. Returns `[{addr, name}, ...]`. Use this once at the "
+          "start to identify what to stub.",
+          {})
+    async def warp_callees(_args):
+        try:
+            fn = bv.get_function_at(addr)
+            if fn is None:
+                return _err(f"no function at {addr:#x}")
+            seen: set[int] = set()
+            out: list[str] = []
+            for c in (fn.callees or []):
+                if c.start in seen:
+                    continue
+                seen.add(c.start)
+                nm = c.name or ""
+                if nm.startswith(("_Z", "j_")) or "::" in nm:
+                    out.append(f"  {c.start:#x}  {nm}")
+            if not out:
+                return _ok("(no WARP-recovered callees - all are user fns or sub_*)")
+            return _ok(f"{len(out)} WARP callee(s); stub them, don't inline:\n"
+                       + "\n".join(out))
+        except Exception as e:
+            return _err(f"warp_callees: {type(e).__name__}: {e}")
+
     @tool("region_blocks",
           "List the basic blocks (BBs) of the target function. Returns "
           "`[(idx, start_addr, end_addr, instr_count), ...]` so you can "
@@ -287,7 +316,7 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
     return [il_vars, prior_metadata, prior_reconstruction, signer_types,
             bin_depends, bin_neighbors,
             check_types, check_reconstruction,
-            region_blocks, check_region]
+            warp_callees, region_blocks, check_region]
 
 
 def _ok(text: str):

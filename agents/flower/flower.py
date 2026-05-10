@@ -98,6 +98,40 @@ SAFE-RUST CONTRACT (hard requirement):
   - For inlined fns (stdlib calls expanded into the body), write the
     high-level form: `vec.push(x)`, not the lowered RawVec dance.
 
+WARP-RECOVERED CALLEES — STUB THEM, DON'T INLINE:
+  Any callee whose binja name contains `::` or starts with `_Z` (Rust
+  ABI mangled) is WARP-recovered: binja already knows it's a stdlib
+  fn (HashMap insert, SipHash, RawVec, format::write, etc). DO NOT
+  reconstruct its inlined body — declare a stub with the canonical
+  stdlib signature and move on:
+
+      // RandomState::hash_one specialised to usize
+      fn hash_one_random_state_usize(this: &RandomState, x: u64) -> u64 {
+          unimplemented!()
+      }
+
+  The agent's job is the USER fn body, not re-implementing stdlib.
+  If you find yourself transcribing 20+ lines of XOR/rotate/add (that
+  is *always* SipHash), `vec.push`/raw_vec alloc dance, or HashMap
+  bucket-walk code, STOP. Identify which stdlib fn the inline came
+  from, write its stub, and call the stub from your body.
+
+  Common inlines and their stub names:
+    - 30+ lines of `rol`/XOR/add bit math → `RandomState::hash_one*`
+      or `BuildHasher::hash_one*`
+    - `[ptr + 0]/[ptr + 8]/[ptr + 16] = ...; reserve_for_push` →
+      `Vec::push` (or `with_capacity_in`)
+    - control/mask byte walks + `tombstone` constants → `HashMap::insert`
+      or `RawTable::find`
+    - `__rust_alloc` / `alloc::alloc` shape → `Box::new` or `Vec::with_capacity`
+    - `Formatter::write_str` / `Arguments::new_v1` → `format!` macro
+      (treat the args as the high-level format arguments)
+
+  When in doubt, look at the surrounding context: a hash_one in a
+  HashMap path is a hasher call; a hash_one as part of a raw probe
+  loop is also a hasher call. Either way, you write
+  `state.hasher.hash_one(x)` (or your stub), not the SipHash math.
+
 ANTIPATTERNS:
   - One-to-one transcription of HLIL into Rust. If your output is the
     same length as `decompile`, you've under-reconstructed.
