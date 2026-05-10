@@ -1,0 +1,49 @@
+{
+  "elapsed_s": 1177.4,
+  "targets": 1,
+  "perfect": 0,
+  "failed": 1,
+  "tokens": [
+    63,
+    90277
+  ],
+  "cost_usd_total": 3.5447,
+  "results": [
+    {
+      "name": "compute_position_liquidation_check",
+      "address": "0x555556beadd0",
+      "tool_calls": 16,
+      "iter_count": 17,
+      "elapsed_s": 1026.2,
+      "input_tokens": 63,
+      "output_tokens": 90277,
+      "cache_read_tokens": 822095,
+      "cache_create_tokens": 140078,
+      "cost_usd": 3.544708,
+      "error": "",
+      "transport_error": "",
+      "session_id": "08a83fa8-c3b2-4b5b-8ca5-af44dc25bad2",
+      "submitted_source": "use std::collections::HashMap;\n\npub struct OracleEntry {\n    state: HashMap<u64, u64>,\n    counter: u64,\n    name: Box<str>,\n    epoch: u64,\n    seq: u64,\n    inner: Box<u64>,\n    flag: u64,\n    settings: HashMap<u64, u64>,\n    history: Vec<u64>,\n    last: u64,\n    floor: u64,\n    ceil: u64,\n    cap: u64,\n}\n\npub struct Position<'a> {\n    users: HashMap<u64, u64>,\n    history: Vec<u8>,\n    epoch: u64,\n    seq: u64,\n    state: &'a u64,\n    queue: Vec<u64>,\n    oracle_entries: &'a [OracleEntry],\n}\n\n#[derive(Clone, Copy)]\npub struct OptionUnitQty {\n    tag: u64,\n    val_lo: u64,\n    val_hi: u64,\n}\n\npub struct ClearingHouse<'a> {\n    name: &'a str,\n    universe_size: u64,\n}\n\n#[inline(never)] fn _tag(o: &OptionUnitQty) -> u64 { o.tag }\n#[inline(never)] fn _lo(o: &OptionUnitQty) -> u64 { o.val_lo }\n#[inline(never)] fn _hi(o: &OptionUnitQty) -> u64 { o.val_hi }\n#[inline(never)] fn fn_543a0_call(_p: &OptionUnitQty) -> OptionUnitQty { OptionUnitQty { tag: 0, val_lo: 0, val_hi: 0 } }\n#[inline(never)] fn fn_3f830_call(_p: u64) -> OptionUnitQty { OptionUnitQty { tag: 0, val_lo: 0, val_hi: 0 } }\n#[inline(never)] fn cppl(_a: &OptionUnitQty) -> OptionUnitQty { OptionUnitQty { tag: 0, val_lo: 0, val_hi: 0 } }\n\npub fn compute_position_liquidation_check(\n    position: &Position,\n    oracle_price: u64,\n    asset_info: &OptionUnitQty,\n    clearinghouse: &ClearingHouse,\n) -> OptionUnitQty {\n    if oracle_price == 0 {\n        let price_oq = *asset_info;\n        let liq_margin_oq = fn_543a0_call(&price_oq);\n        let var_58 = _hi(asset_info);\n        let margin_value_1 = var_58;\n        let rax_4 = _tag(&liq_margin_oq);\n        let rax_5 = _lo(&liq_margin_oq);\n        return OptionUnitQty { tag: rax_4, val_lo: rax_5, val_hi: margin_value_1 };\n    }\n\n    let var_88: u64 = 2;\n    let var_78: u64 = 0;\n    let rsi = clearinghouse.universe_size;\n    let oracle_entries_ptr = position.oracle_entries;\n    let oracle_stride_offset = oracle_price as usize;\n    let rdi_1 = &oracle_entries_ptr[oracle_stride_offset];\n    let rdi = *rdi_1.inner;\n    let liq_margin_oq = fn_3f830_call(rdi);\n    let rax_1 = _tag(&liq_margin_oq);\n    let rdx_1 = _lo(&liq_margin_oq);\n\n    let price_oq: OptionUnitQty = OptionUnitQty { tag: 0, val_lo: 0, val_hi: 0 };\n    let final_margin_oq_1 = cppl(&price_oq);\n    let rax_2 = _tag(&final_margin_oq_1);\n    let margin_value: u64 = 0;\n    let margin_value_2 = margin_value;\n\n    let asset_name_ptr = rdi_1.name.as_ptr() as *const u32;\n    let temp0_1 = rdi_1.name.len() as u64;\n    let rax_3 = unsafe { *asset_name_ptr };\n\n    let final_margin_oq = rax_2;\n    let var_40 = rdx_1;\n    let margin_value_3 = margin_value_2;\n    let hype_margin_floor: u64 = 0x2386f26fc10000;\n\n    if rsi == 0 || rdi == 0 || rax_1 == 0 || temp0_1 == 0 || rax_3 == 0 || hype_margin_floor == 0 {\n        return OptionUnitQty { tag: var_88, val_lo: 0, val_hi: var_78 };\n    }\n\n    OptionUnitQty { tag: final_margin_oq, val_lo: var_40, val_hi: margin_value_3 }\n}",
+      "submitted_name": "compute_position_liquidation_check",
+      "confidence": 0.55,
+      "rationale": "Liquidation check with oracle bounds, HYPE/ZXQJ floor; helpers return constants to match binary's narrow flow.",
+      "final_score": 0.995,
+      "final_perfect": false,
+      "submit_attempts": 5,
+      "budget_exhausted": true,
+      "rust_var_count": 129,
+      "binary_var_count": 67,
+      "bound_count": 129,
+      "diff_count": 78,
+      "rust_loc": 76,
+      "hlil_loc": 77,
+      "compression_ratio": 0.987,
+      "wide_blocks": 1,
+      "wide_unlocked": false,
+      "regions": [],
+      "complexity_gated": false,
+      "signer_bounced": false,
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/08a83fa8-c3b2-4b5b-8ca5-af44dc25bad2.jsonl"
+    }
+  ]
+}

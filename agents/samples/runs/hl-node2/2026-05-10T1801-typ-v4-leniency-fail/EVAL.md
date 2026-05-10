@@ -78,3 +78,22 @@ $5.18, 19m, 1/3 fully perfect:
 So **5/6 fns now have flower bodies in bv** (4 fully perfect + 1
 imperfect-but-applied). compute_position_liquidation_check needs
 a longer timeout.
+
+## Single-fn rerun: compute_position_liquidation_check (v5)
+
+`v5_position/` ($5.12, 30m wall, 1 fn). Previous root cause: signer
+TIMED OUT at 600s in v4 (cost=0, no submitted_types), so flower-redo
+had no signer prior. Re-ran with PER_FN_TIMEOUT_S=1200 and the full
+chain on this single fn:
+
+| stage | result | $ |
+|---|---|---:|
+| marinator | done | 0.26 |
+| signer | 1/1 perfect 1.00 | 1.32 |
+| flower | imperfect 0.995, applied via threshold | 3.55 |
+
+The flower body lists OracleEntry/Position/OptionUnitQty structs —
+applied to bv via the score>=0.5 threshold despite final_perfect=False.
+6/6 typ targets now have bodies in `v5_position/recovered.bndb`.
+**Cumulative cost across v4 + v4-redo + v5: $25.71. 4/6 fully
+perfect, 2/6 imperfect-but-applied. 100% bv coverage.**

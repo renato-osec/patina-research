@@ -1,0 +1,44 @@
+{
+  "elapsed_s": 473.0,
+  "targets": 1,
+  "perfect": 1,
+  "failed": 0,
+  "tokens": [
+    26,
+    34232
+  ],
+  "cost_usd_total": 1.3215,
+  "results": [
+    {
+      "name": "compute_position_liquidation_check",
+      "address": "0x555556beadd0",
+      "tool_calls": 23,
+      "iter_count": 15,
+      "elapsed_s": 472.9,
+      "input_tokens": 26,
+      "output_tokens": 34232,
+      "cache_read_tokens": 154213,
+      "cache_create_tokens": 58531,
+      "cost_usd": 1.32150015,
+      "error": "",
+      "transport_error": "",
+      "session_id": "fc5ce2d3-292f-4546-a58d-b9d65229e1ad",
+      "submitted_decl": "use std::collections::HashMap;\n\npub struct OracleEntry {\n    state: HashMap<u64, u64>,\n    counter: u64,\n    name: Box<str>,\n    epoch: u64,\n    seq: u64,\n    inner: Box<u64>,\n    flag: u64,\n    settings: HashMap<u64, u64>,\n    history: Vec<u64>,\n    last: u64,\n    floor: u64,\n    ceil: u64,\n    cap: u64,\n}\n\npub struct Position<'a> {\n    users: HashMap<u64, u64>,\n    history: Vec<u8>,\n    epoch: u64,\n    seq: u64,\n    state: &'a u64,\n    queue: Vec<u64>,\n    oracle_entries: &'a [OracleEntry],\n}\n\npub struct OptionUnitQty {\n    tag: u64,\n    val_lo: u64,\n    val_hi: u64,\n}\n\npub struct ClearingHouse<'a> {\n    name: &'a str,\n    universe_size: u64,\n}\n\n(this: &Position<'_>, asset_idx: u64, price: &OptionUnitQty, ch: &ClearingHouse<'_>) -> OptionUnitQty",
+      "submitted_types": "use std::collections::HashMap;\n\npub struct OracleEntry {\n    state: HashMap<u64, u64>,\n    counter: u64,\n    name: Box<str>,\n    epoch: u64,\n    seq: u64,\n    inner: Box<u64>,\n    flag: u64,\n    settings: HashMap<u64, u64>,\n    history: Vec<u64>,\n    last: u64,\n    floor: u64,\n    ceil: u64,\n    cap: u64,\n}\n\npub struct Position<'a> {\n    users: HashMap<u64, u64>,\n    history: Vec<u8>,\n    epoch: u64,\n    seq: u64,\n    state: &'a u64,\n    queue: Vec<u64>,\n    oracle_entries: &'a [OracleEntry],\n}\n\npub struct OptionUnitQty {\n    tag: u64,\n    val_lo: u64,\n    val_hi: u64,\n}\n\npub struct ClearingHouse<'a> {\n    name: &'a str,\n    universe_size: u64,\n}",
+      "submitted_signature": "(this: &Position<'_>, asset_idx: u64, price: &OptionUnitQty, ch: &ClearingHouse<'_>) -> OptionUnitQty",
+      "confidence": 0.55,
+      "rationale": "option_unit_qty_cmp call confirms 24B OptionUnitQty (3 u64s) for both rcx input and sret output; OracleEntry has &str at +0x38, ptr at +0x58, flag at +0x60; ClearingHouse has &[T;0xc8] at +8.",
+      "final_score": 1.0,
+      "final_perfect": true,
+      "submit_attempts": 2,
+      "budget_exhausted": false,
+      "wide_blocks": 1,
+      "wide_unlocked": true,
+      "c_decl": "void f(struct OptionUnitQty* _ret, struct Position____* this_, uint64_t asset_idx, struct OptionUnitQty* price, struct ClearingHouse____* ch)",
+      "c_structs": "struct ClearingHouse____ {\n    uint8_t /* &str */[16] name;\n    uint64_t universe_size;\n};\n\nstruct OptionUnitQty {\n    uint64_t tag;\n    uint64_t val_lo;\n    uint64_t val_hi;\n};\n\nstruct alloc_raw_vec_Cap {\n    uintptr_t _0;\n};\n\nstruct std_ptr_NonNull_u8_ {\n    void* pointer;\n};\n\nstruct std_hash_RandomState {\n    uint64_t k0;\n    uint64_t k1;\n};\n\nstruct std_ptr_Unique_u8_ {\n    struct std_ptr_NonNull_u8_ pointer;\n};\n\nstruct hashbrown_raw_RawTableInner {\n    struct std_ptr_NonNull_u8_ ctrl;\n    uintptr_t bucket_mask;\n    uintptr_t growth_left;\n    uintptr_t items;\n};\n\nstruct alloc_raw_vec_RawVecInner {\n    struct alloc_raw_vec_Cap cap;\n    struct std_ptr_Unique_u8_ ptr;\n};\n\nstruct hashbrown_raw_RawTable__u64__u64__ {\n    struct hashbrown_raw_RawTableInner table;\n};\n\nstruct alloc_raw_vec_RawVec_u64_ {\n    struct alloc_raw_vec_RawVecInner inner;\n};\n\nstruct alloc_raw_vec_RawVec_u8_ {\n    struct alloc_raw_vec_RawVecInner inner;\n};\n\nstruct hashbrown_map_HashMap_u64__u64__std_hash_RandomState_ {\n    struct hashbrown_raw_RawTable__u64__u64__ table;\n    struct std_hash_RandomState hash_builder;\n};\n\nstruct std_vec_Vec_u64_ {\n    struct alloc_raw_vec_RawVec_u64_ buf;\n    uintptr_t len;\n};\n\nstruct std_vec_Vec_u8_ {\n    struct alloc_raw_vec_RawVec_u8_ buf;\n    uintptr_t len;\n};\n\nstruct std_collections_HashMap_u64__u64_ {\n    struct hashbrown_map_HashMap_u64__u64__std_hash_RandomState_ base;\n};\n\nstruct Position____ {\n    struct std_vec_Vec_u8_ history;\n    struct std_vec_Vec_u64_ queue;\n    struct std_collections_HashMap_u64__u64_ users;\n    void* state;\n    uint8_t /* &[OracleEntry] */[16] oracle_entries;\n    uint64_t epoch;\n    uint64_t seq;\n};",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/fc5ce2d3-292f-4546-a58d-b9d65229e1ad.jsonl"
+    }
+  ]
+}
