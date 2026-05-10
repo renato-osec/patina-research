@@ -235,12 +235,16 @@ def check(
             got = _norm_sig(sig_str)
             if want and want != got:
                 return CheckResult(False,
-                    f"submission rejected: main fn signature does not "
-                    f"match signer's recovered prototype. Copy signer's "
-                    f"signature into your `fn {rust_fn_name}(...)` "
-                    f"verbatim.\n"
-                    f"  signer: {want}\n"
-                    f"  yours:  {got}", False)
+                    f"submission rejected: main fn signature MUST equal "
+                    f"signer's recovered prototype verbatim.\n\n"
+                    f"REPLACE your `fn {rust_fn_name}(...)` line with "
+                    f"EXACTLY:\n\n"
+                    f"```rust\n"
+                    f"pub fn {rust_fn_name}{want} {{\n"
+                    f"    // body here\n"
+                    f"}}\n"
+                    f"```\n\n"
+                    f"You wrote: `fn {rust_fn_name}{got}`", False)
     # Signer-handoff: struct identity. Any struct named in signer's
     # types must NOT be redefined in flower's source with a different
     # field set. The agent should include signer's types verbatim in
@@ -252,17 +256,24 @@ def check(
         for name, want_set in want_fields.items():
             got_set = got_fields.get(name)
             if got_set is not None and got_set != want_set:
+                # Pull the full struct definition out of signer_types
+                # so the agent can copy-paste it verbatim.
+                m = __import__("re").search(
+                    r"(?:pub\s+)?struct\s+" + __import__("re").escape(name)
+                    + r"\b[^{]*\{[^}]*\}", signer_types or "")
+                canonical = m.group(0) if m else (
+                    f"pub struct {name} {{ /* ...signer fields... */ }}")
                 miss = sorted(want_set - got_set)
                 extra = sorted(got_set - want_set)
-                msg = (f"submission rejected: struct `{name}` is "
-                       f"redefined with a different field set than "
-                       f"signer recovered. ")
+                msg = (f"submission rejected: struct `{name}` redefined "
+                       f"with a different field set than signer recovered. ")
                 if miss:
                     msg += f"missing signer fields: {miss}. "
                 if extra:
                     msg += f"new agent-invented fields: {extra}. "
-                msg += ("Copy signer's struct verbatim into your "
-                        "prelude.")
+                msg += (f"\n\nREPLACE your `struct {name}` definition "
+                        f"with EXACTLY this signer-recovered version:\n\n"
+                        f"```rust\n{canonical}\n```")
                 return CheckResult(False, msg, False)
     # 1. Compile via lymph; with_compiler_errors captures rustc stderr
     #    and appends it to the exception so the agent sees real
