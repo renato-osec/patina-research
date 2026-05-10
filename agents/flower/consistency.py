@@ -120,17 +120,17 @@ def check(
     bv,
     fn_addr: int,
     rust_fn_name: str,
-    region: tuple[int, int] | None = None,
+    region: tuple[int, int] | list[int] | None = None,
 ) -> CheckResult:
     """Verify `rust_source` compiles and its dataflow matches the binary
     fn at `fn_addr`. Var binding is by name: every Rust var must be
     named after an HLIL var (`arg1`, `var_28`, etc.) so the mapping
     `rust_name -> il_name` is the identity intersection.
 
-    `region=(block_start, block_end)` scopes the binary lowering to a
-    contiguous range of basic blocks instead of the whole function;
-    use it for piece-wise reconstruction (the agent submits Rust for
-    just that region and validates against that region's dataflow).
+    `region` scopes the binary lowering to a subset of basic blocks:
+      - `(block_start, block_end)` tuple: contiguous range
+      - `list[int]`: arbitrary BB indices, may be non-contiguous (use
+        for inlined fn bodies that lower to scattered blocks)
     """
     # 0a. Bug 5: reject `#![allow(...)]` attribute spam unless it's
     # only `dead_code` (the one allow that's legitimately useful in
@@ -168,9 +168,12 @@ def check(
     # the whole fn or a contiguous BB range, depending on `region`.
     if region is None:
         anem = anemone.analyze(bv, fn_addr)
-    else:
+    elif isinstance(region, tuple) and len(region) == 2:
         bs, be = int(region[0]), int(region[1])
         anem = anemone.analyze_region(bv, fn_addr, bs, be)
+    else:
+        ids = sorted({int(i) for i in region})
+        anem = anemone.analyze_blocks(bv, fn_addr, ids)
 
     # 2a. Bug 6: reject trivial-body submissions for non-trivial fns.
     # `let _ = (...)` stubs trivially pass dataflow (no flow to compare)

@@ -244,33 +244,45 @@ def make(bv, addr: int, *, prelude: str | None = None, rust_fn_name: str,
         return _ok("\n".join(lines))
 
     @tool("check_region",
-          "Validate a Rust source snippet against a *contiguous range "
-          "of basic blocks* `[block_start, block_end)` of the target "
-          "function (use `region_blocks` to list ranges). The validator "
-          "runs the same three checks as `check_reconstruction` but "
-          "scopes the binary side to that region's flow only - so a "
-          "small Rust function modeling, say, the loop body or a "
-          "single branch arm validates cleanly. Region results "
-          "compose into the full function via `submit_region`.",
-          {"source": str, "block_start": int, "block_end": int})
+          "Validate a Rust source snippet against a SET of basic blocks "
+          "of the target function. Pass `blocks` as a list of BB "
+          "indices (use `region_blocks` to list them). The set may be "
+          "non-contiguous - inlined fns, hot/cold splits, and macro "
+          "expansions often span scattered BBs. Validator runs the "
+          "same three checks as `check_reconstruction` but scopes the "
+          "binary side to just those blocks' flow. Legacy form "
+          "`block_start`/`block_end` for a contiguous range still "
+          "works; pass either `blocks` OR both range fields.",
+          {"source": str, "blocks": list,
+           "block_start": int, "block_end": int})
     async def check_region(args):
         src = (args.get("source") or "").strip()
-        bs = int(args.get("block_start") or 0)
-        be = int(args.get("block_end") or 0)
         if not src:
             return _err("source is empty")
-        if be <= bs:
-            return _err("block_end must be > block_start")
+        blocks = args.get("blocks")
+        region: tuple[int, int] | list[int] | None
+        if blocks:
+            region = sorted({int(b) for b in blocks})
+            if not region:
+                return _err("blocks list is empty")
+            tag = f"blocks={region}"
+        else:
+            bs = int(args.get("block_start") or 0)
+            be = int(args.get("block_end") or 0)
+            if be <= bs:
+                return _err("pass `blocks=[...]` or "
+                            "`block_start`/`block_end` with end > start")
+            region = (bs, be)
+            tag = f"region=[{bs},{be})"
         full = "\n".join(p for p in (prelude or "", src) if p).strip()
         try:
             r = consistency.check(full, bv=bv, fn_addr=addr,
                                   rust_fn_name=rust_fn_name,
-                                  region=(bs, be))
+                                  region=region)
         except Exception as e:
-            return _err(f"check_region [{bs},{be}): "
+            return _err(f"check_region {tag}: "
                         f"{type(e).__name__}: {e}")
-        head = f"region=[{bs},{be})  " + _format(r, rust_fn_name)
-        return _ok(head)
+        return _ok(f"{tag}  " + _format(r, rust_fn_name))
 
     return [il_vars, prior_metadata, prior_reconstruction, signer_types,
             bin_depends, bin_neighbors,

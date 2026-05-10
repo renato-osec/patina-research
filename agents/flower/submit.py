@@ -67,33 +67,53 @@ def make(
           "this ONLY after a `check_region` returned `perfect=True` "
           "(or with `binary_over` warnings only) - the harness re-"
           "runs `check_region` and rejects unverified submissions. "
-          "Each accepted snippet is recorded under "
-          "`flower.regions[<addr>] = [{block_start, block_end, "
-          "source, score, note}, ...]` in the cross-stage sidecar "
-          "for visualization later.",
-          {"source": str, "block_start": int, "block_end": int,
-           "note": str})
+          "`blocks` is a list of BB indices; the set may be non-"
+          "contiguous (inlined fns / hot-cold splits). Legacy "
+          "`block_start`/`block_end` for a contiguous range still "
+          "works. Each accepted snippet is recorded under "
+          "`flower.regions[<addr>] = [{blocks, source, score, "
+          "note}, ...]` in the cross-stage sidecar for "
+          "visualization later.",
+          {"source": str, "blocks": list,
+           "block_start": int, "block_end": int, "note": str})
     async def submit_region(args):
         src = (args.get("source") or "").strip()
-        bs = int(args.get("block_start") or 0)
-        be = int(args.get("block_end") or 0)
+        if not src:
+            return _txt("error: empty source")
         note = (args.get("note") or "").strip()
-        if not src or be <= bs:
-            return _txt("error: empty source or invalid range")
+        blocks = args.get("blocks")
+        region: tuple[int, int] | list[int]
+        if blocks:
+            region = sorted({int(b) for b in blocks})
+            if not region:
+                return _txt("error: blocks list is empty")
+            tag = f"blocks={region}"
+        else:
+            bs = int(args.get("block_start") or 0)
+            be = int(args.get("block_end") or 0)
+            if be <= bs:
+                return _txt("error: pass `blocks=[...]` or "
+                            "`block_start`/`block_end` with end > start")
+            region = (bs, be)
+            tag = f"[{bs},{be})"
         score = 1.0
         if consistency_module is not None and bv is not None:
             full = "\n".join(p for p in (prelude or "", src) if p).strip()
             try:
                 r = consistency_module.check(
                     full, bv=bv, fn_addr=fn_addr,
-                    rust_fn_name=rust_fn_name, region=(bs, be))
+                    rust_fn_name=rust_fn_name, region=region)
             except Exception as e:
                 return _txt(f"error: re-check raised {type(e).__name__}: {e}")
             if not r.perfect:
-                return _txt(f"region [{bs},{be}) NOT accepted: re-check failed.\n{r.feedback}")
+                return _txt(f"region {tag} NOT accepted: re-check failed.\n{r.feedback}")
             score = 1.0 if r.perfect else 0.0
-        snippet = {"block_start": bs, "block_end": be,
-                   "source": src, "score": score, "note": note}
+        if isinstance(region, tuple):
+            blocks_list = list(range(region[0], region[1]))
+        else:
+            blocks_list = list(region)
+        snippet = {"blocks": blocks_list, "source": src,
+                   "score": score, "note": note}
         captured["regions"].append(snippet)
         if apply_ctx is not None and apply_ctx.recoveries is not None:
             try:
@@ -104,7 +124,7 @@ def make(
             except Exception as e:
                 print(f"[flower] submit_region sidecar write failed: "
                       f"{type(e).__name__}: {e}", flush=True)
-        return _txt(f"region [{bs},{be}) accepted ({len(src)}B)")
+        return _txt(f"region {tag} accepted ({len(src)}B)")
 
     @tool("submit_reconstruction",
           "Submit your final Rust reconstruction of the target function. "
