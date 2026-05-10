@@ -215,6 +215,9 @@ class FlowerResult(AgentResult):
     regions: list = field(default_factory=list)  # per-region BB->Rust snippets
     complexity_gated: bool = False
     signer_bounced: bool = False
+    bb_total: int = 0           # total BBs in fn (for region coverage)
+    bb_covered: int = 0         # union of region.blocks
+    bb_overlap: int = 0         # blocks claimed by 2+ regions (ambiguous map)
 
 
 def transcript_path(rec: "FlowerResult", cwd: str | None = None) -> Path | None:
@@ -560,6 +563,21 @@ async def sign_function(
     rec.regions = list(captured.get("regions") or [])
     rec.complexity_gated = bool(captured.get("complexity_gated"))
     rec.signer_bounced = bool(captured.get("signer_bounced"))
+    # Region partition coverage: union(region.blocks) vs total BBs.
+    try:
+        rec.bb_total = len(list(f.basic_blocks)) if f else 0
+    except Exception:
+        rec.bb_total = 0
+    if rec.regions:
+        seen: set[int] = set()
+        overlap: set[int] = set()
+        for r in rec.regions:
+            for b in (r.get("blocks") or []):
+                if b in seen:
+                    overlap.add(int(b))
+                seen.add(int(b))
+        rec.bb_covered = len(seen)
+        rec.bb_overlap = len(overlap)
     rec.confidence = captured["confidence"]
     rec.rationale = captured["rationale"]
     rec.submit_attempts = captured["attempts"]

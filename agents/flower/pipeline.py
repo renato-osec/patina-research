@@ -44,11 +44,17 @@ def _format_done(rec):
     tag = "FAILED" if (rec.budget_exhausted and not rec.final_perfect) else (
         "OK" if rec.final_perfect else "imperfect")
     src = (rec.submitted_source or "")[:120]
+    cov = ""
+    if rec.bb_total:
+        cov = (f"  cov={rec.bb_covered}/{rec.bb_total} "
+               f"regions={len(rec.regions)}")
+        if rec.bb_overlap:
+            cov += f" overlap={rec.bb_overlap}"
     return (f"[done ] {rec.name}  [{tag}]  source={src!r}  "
             f"final_score={rec.final_score:.2f}  perfect={rec.final_perfect}  "
             f"exhausted={rec.budget_exhausted}  "
             f"submits={rec.submit_attempts}  tools={rec.tool_calls} "
-            f"iters={rec.iter_count} ${rec.cost_usd:.3f} t={rec.elapsed_s}s")
+            f"iters={rec.iter_count} ${rec.cost_usd:.3f} t={rec.elapsed_s}s{cov}")
 
 
 SPEC = StageSpec(
