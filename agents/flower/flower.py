@@ -113,34 +113,37 @@ WORKFLOW:
 
 REGION-FIRST FOR LARGE FNS (preferred for anything > ~10 BBs):
   Whole-fn reconstruction is hard and noisy on big bodies. Instead:
-    a. Call `region_blocks` once. Pick a contiguous range of 3-8 BBs
-       that maps to a logical unit (loop body, branch arm, init,
-       cleanup) - blocks are in MLIL-SSA topological order so
-       neighbours are usually flow-connected.
-    b. For each region, write ONLY that region's Rust as a
-       standalone fn that takes the region's live-in HLIL vars and
-       returns the live-out one(s). Validate with
-       `check_region {source, block_start, block_end}` - the binary
-       side is scoped to that region's flow only, so the diff
-       output is dramatically tighter.
-    c. When the region is `perfect=True`, call
-       `submit_region {source, block_start, block_end, note}`. The
-       harness re-checks before persisting; accepted snippets land
-       in the cross-stage sidecar under `flower.regions[<addr>]` so
-       later visualisation can map binary blocks to recovered Rust
-       1-to-1.
-    d. After you've covered every meaningful region (or once you
-       have enough to compose the body), assemble them in a final
-       `submit_reconstruction`. Region snippets ARE compositional:
-       you can paste them in the body in topo order and check the
-       full fn at the end.
+    a. Call `region_blocks` once to list every BB and its instr range.
+    b. Pick a SET of BBs that maps to a logical unit (one inlined fn,
+       one match arm, one loop, one error path). The set CAN be
+       non-contiguous: an inlined `Vec::push` is often BBs `[7, 12, 23]`
+       (hot path + cold realloc + tail). A `match` arm with early-
+       returns is often `[3, 8, 14]`. Pass `blocks=[3, 8, 14]` to
+       `check_region` / `submit_region`. For a contiguous range you can
+       still use `block_start`/`block_end`.
+    c. Write ONLY that set's Rust as a standalone fn taking the live-in
+       HLIL vars and returning the live-out one(s). Validate with
+       `check_region {source, blocks}` - the binary side is scoped to
+       just those blocks, diff output is tight.
+    d. When the region is `perfect=True`, call
+       `submit_region {source, blocks, note}`. The harness re-checks
+       before persisting; accepted snippets land in the sidecar under
+       `flower.regions[<addr>] = [{blocks: [int], source, score, note}]`
+       so visualisation can map binary blocks 1-to-1 to recovered Rust.
+    e. Aim for COVERAGE: by run-end, the union of submitted
+       `region.blocks` should equal every BB index. Overlap is bad
+       (ambiguous mapping); gaps are bad (untranslated logic). Treat
+       each region as one source-level statement worth of work.
+    f. After you've covered every meaningful region, assemble them in
+       a final `submit_reconstruction`. Region snippets compose: paste
+       in the body in topo order and check the full fn.
 
 `check_reconstruction` / `submit_reconstruction` validate the WHOLE
-function. `check_region` / `submit_region` validate JUST a BB range.
-Pick the right tool for the size of the work; over-reach on big
-fns is the most common cheese trap.
+function. `check_region` / `submit_region` validate just the BB set.
+Pick the right tool for the size of the work; over-reach on big fns
+is the most common cheese trap.
 
-You have 16 turns.
+You have 24 turns. The harness will warn you at -4 and -1 left.
 
 RUSTC ERRORS ON SUBMIT ARE TRANSIENT. Concurrent workers stomp a shared
 tmp file; if the SAME `source` JUST PASSED `check_reconstruction` and
