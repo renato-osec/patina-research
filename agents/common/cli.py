@@ -384,7 +384,10 @@ def resolve_targets(bv: Any, args, *, log_err=None) -> list[tuple[str, int]]:
                 continue
             _add(f)
 
+    flat_addrs: list[str] = []
     for raw in getattr(args, "addresses", []) or []:
+        flat_addrs.extend(p for p in str(raw).split(",") if p.strip())
+    for raw in flat_addrs:
         try:
             addr = int(raw, 16) if str(raw).startswith("0x") else int(raw)
         except ValueError:
