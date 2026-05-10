@@ -1,12 +1,4 @@
-# Per-function Rust-source reconstruction harness (flower agent).
-#
-# Reads a binja BinaryView, picks one function, asks an LLM agent to
-# emit Rust source for it. The harness validates each submit via
-# consistency.check (lymph compile + anemone dataflow + var-name
-# binding) and bounces non-perfect submissions back for refinement.
-# The agent's iterative tools (`il_vars`, `signer_types`, `bin_depends`,
-# `bin_neighbors`, `check_reconstruction`) all share the same
-# validation surface as the PostToolUse hook on `submit_reconstruction`.
+# Per-fn Rust-source reconstruction harness; lymph + anemone validator.
 from __future__ import annotations
 
 import os
@@ -209,16 +201,12 @@ class FlowerResult(AgentResult):
     # Per-target dataflow stats from consistency.check on the final submit.
     rust_var_count: int = 0
     binary_var_count: int = 0
-    bound_count: int = 0          # rust vars matched to an HLIL var
+    bound_count: int = 0
     diff_count: int = 0
-    # Brevity: did the agent ACTUALLY recover inline fns or just transcribe?
-    # < 1.0 means submitted Rust source has fewer non-blank lines than the
-    # original HLIL listing - the win condition. ratio == 0.0 means
-    # uncomputed (e.g. submitted source is empty).
+    # Brevity ratio: rust LOC / hlil LOC; < 1.0 = recovery, 0.0 = uncomputed.
     rust_loc: int = 0
     hlil_loc: int = 0
     compression_ratio: float = 0.0
-    # Wide-tool gate accounting (PreToolUse hook).
     wide_blocks: int = 0
     wide_unlocked: bool = False
 
@@ -254,16 +242,9 @@ async def sign_function(
     shared_ctx: TargetCtx | None = None,
     trace: bool = False,
 ) -> FlowerResult:
-    """Run the signer agent on one function. `prelude` is an optional Rust
-    snippet (struct/use defs) appended to every check_signature call so
-    user types can be looked up by name. `submit_rounds` caps how many
-    times the harness's PostToolUse validator will bounce a non-perfect
-    submission back at the agent for refinement (1 = accept first try)."""
-    # Per-worker fork: writing `shared_ctx.fn_addr = fn_addr` raced
-    # under asyncio - the submit hook would later read whichever addr
-    # the next-scheduled worker stamped, so most recoveries landed in
-    # the wrong sidecar slot (or none at all). `fork` shares bv +
-    # locks + recoveries but gives each call its own fn_addr.
+    """Run flower on one fn. `prelude` appended to each check_signature.
+    `submit_rounds` caps PostToolUse bounces (1 = accept first try)."""
+    # Per-worker fork: shared fn_addr races under asyncio.
     if shared_ctx is None:
         ctx = TargetCtx(bv=bv, fn_addr=fn_addr)
         owns_ctx = True
@@ -275,34 +256,16 @@ async def sign_function(
     name = f.name if f else f"sub_{fn_addr:x}"
     rec = FlowerResult(name=name, address=f"{fn_addr:#x}")
 
-    # Validator the PostToolUse hook calls on every submit_signature
-    # firing. Returns (perfect, feedback, has_warnings, arity_only).
-    #   has_warnings: triggers a free first-round scold (placeholder
-    #     structs / skip-arrays / offset-named fields).
-    #   arity_only: not perfect, BUT the only mismatch is missing-reg
-    #     arity (binary optimized away a small bool/u8 arg). Per the
-    #     SYSTEM rule we accept the submission instead of bouncing,
-    #     since asking the agent to "refine" would push them to drop
-    #     the real arg.
-    # The Rust fn name the agent must use in `source`. `f.name` is the
-    # raw Rust ABI symbol (`_ZN6source5State4jump17h...E`); use binja's
-    # demangled `symbol.short_name`, strip the `::h<16-hex>` ABI tag
-    # and keep just the leaf so `fn jump(...)` is what the agent writes.
-    import consistency  # noqa: F401  (also passed to submit.make for region re-check)
+    import consistency  # noqa: F401
     short = (f.symbol.short_name if f and f.symbol else None) or name
     rust_fn_name = consistency.clean_fn_name(short)
     def validator(decl: str) -> tuple[bool, str, bool, bool, float]:
-        # `decl` here IS the full Rust source the agent submitted.
         full = "\n".join(p for p in (prelude or "", decl) if p).strip()
         try:
             r = consistency.check(full, bv=bv, fn_addr=fn_addr,
                                   rust_fn_name=rust_fn_name)
         except Exception as e:
             return False, f"check_reconstruction raised {type(e).__name__}: {e}", False, False, 0.0
-        # Flower has no arity-trap analogue; pass False unconditionally.
-        # Score: 1.0 perfect, 0.0 otherwise (consistency.CheckResult
-        # only exposes a binary perfect bit; partial-credit scoring
-        # could be added later).
         return r.perfect, r.feedback, r.has_warnings, False, (1.0 if r.perfect else 0.0)
 
     # Pre-dump full asm + HLIL so the submit hook can hand them to the
@@ -317,13 +280,8 @@ async def sign_function(
     except Exception:
         hlil_text = None
 
-    # A/B knobs (env-driven so the bench harness can flip them without
-    # code edits): set SIGNER_NO_FORCE_ITERATE=1 to disable the
-    # force-iterate-first-submit bounce; SIGNER_NO_GATE=1 to skip the
-    # PreToolUse wide-tool gate entirely.
-    # Default OFF: force-iterate-first doubled cost on every successful
-    # run (every [OK] paid for 2 submits). Set
-    # `SIGNER_FORCE_ITERATE_FIRST=1` to opt back in.
+    # Env knobs: SIGNER_FORCE_ITERATE_FIRST=1 to enable bounce on first-submit;
+    # SIGNER_NO_GATE=1 to skip the PreToolUse wide-tool gate.
     no_force_iter = (os.environ.get("SIGNER_NO_FORCE_ITERATE") == "1"
                      or os.environ.get("SIGNER_FORCE_ITERATE_FIRST") != "1")
     stderr_buf: list[str] = []
@@ -334,9 +292,6 @@ async def sign_function(
         asm_path=asm_path, hlil=hlil_text,
         force_iterate_first=not no_force_iter,
         apply_ctx=ctx,
-        # New region-submit path: re-validate on submit using
-        # consistency.check + bv. Threaded through so submit_region
-        # can persist verified Rust snippets.
         rust_fn_name=rust_fn_name, consistency_module=consistency,
         bv=bv, prelude=prelude, fn_addr=fn_addr,
     )
@@ -344,8 +299,7 @@ async def sign_function(
                                rust_fn_name=rust_fn_name,
                                recoveries=ctx.recoveries)
     exo_tools   = t_exo.make(bv, fn_addr)
-    # Order matters: register_trace appears first so the agent's prompt
-    # tools_block lists it at the top - it's the recommended first call.
+    # Order: register_trace first so it's the recommended first call.
     tools = exo_tools + t_binja.make(ctx) + check_tools + submit_tools
 
     user_prompt = (
@@ -353,12 +307,7 @@ async def sign_function(
         f"Call `il_vars` first for the binding vocabulary, then iterate "
         f"via `check_reconstruction`, then `submit_reconstruction`."
     )
-    # Auto-inject what prior stages already recovered for this fn so
-    # the agent doesn't burn turns rederiving the prototype + types
-    # signer just produced. The same content is also queryable via
-    # `prior_metadata` / `prior_reconstruction`, but inlining it here
-    # makes "use what signer gave you" the default and skips the
-    # 1-2 tool roundtrips it costs to ask.
+    # Inline prior-stage findings so the agent doesn't have to query.
     prior_block = _format_prior(ctx.recoveries, fn_addr) if ctx.recoveries else ""
     if prior_block:
         user_prompt += "\n\n" + prior_block
@@ -371,13 +320,7 @@ async def sign_function(
     if submit_hook is not None:
         hooks["PostToolUse"] = [submit_hook]
 
-    # Quick read-only subagent for cross-function context. The parent
-    # spawns it via the `Task` builtin to ask "what does function X do?"
-    # without paying its own context tokens to read whole HLIL. Haiku
-    # model + tight max_turns keep it fast and cheap. The subagent
-    # inherits the same MCP tools (so it can register_trace / decompile
-    # / xrefs across the binary) but doesn't see signer's submit/check
-    # - its only job is to summarize.
+    # Read-only subagent for cross-fn context (haiku, no submit tools).
     inspect_tool_names = sorted(
         {f"mcp__flower__{t.name}" for t in (exo_tools + t_binja.make(ctx))}
     )
@@ -407,15 +350,7 @@ async def sign_function(
         maxTurns=6,
     )
 
-    # Specialist subagent for receiver-type field discovery via the
-    # destructor `core::ptr::drop_in_place::<T>`. The destructor is
-    # the highest-signal pivot for struct recovery - rustc emits one
-    # per type that owns any droppable resource, and its body
-    # dispatches to typed drop_in_place calls for each field. Reading
-    # those gives exact field types (Vec<u8> not "u8 ptr + 2 usize",
-    # HashMap<K,V> not "ctrl/mask/items"). Use this subagent any time
-    # the receiver is a non-trivial struct (anything that has fields
-    # observed past offset 0 with mixed flavors).
+    # Subagent that walks `drop_in_place::<T>` to recover field types.
     destructor_subagent = AgentDefinition(
         description=(
             "Walks the destructor of the receiver type T to extract "
@@ -530,10 +465,7 @@ async def sign_function(
     rec.hlil_loc = _loc(hlil_text or "")
     if rec.hlil_loc and rec.rust_loc:
         rec.compression_ratio = round(rec.rust_loc / rec.hlil_loc, 3)
-    # The PostToolUse hook validated each submit; the last entry of
-    # `validations` is authoritative for the final submission. Re-run
-    # consistency.check to recover numeric stats - the captured tuple
-    # only stores (perfect, feedback) booleans.
+    # Re-check final submission to recover numeric stats not captured.
     if captured["validations"]:
         last_decl, last_perfect, _last_feedback = captured["validations"][-1]
         rec.final_perfect = last_perfect
