@@ -118,7 +118,7 @@ def chain(
     model: str | None = None,
     max_turns: int = 16,
     timeout: int | None = None,
-    submit_rounds: int = 3,
+    submit_rounds: int = 5,
     prelude_file: str | None = None,
     context_dir: str | None = None,
     verbose: bool = False,
@@ -221,7 +221,7 @@ def main() -> int:
                    help="Override every stage's model. Default: each "
                         "stage's own (marinator=sonnet, signer/flower=opus)")
     p.add_argument("--max-turns", type=int, default=24)
-    p.add_argument("--submit-rounds", type=int, default=3)
+    p.add_argument("--submit-rounds", type=int, default=5)
     p.add_argument("--timeout", type=int, default=None)
     p.add_argument("--prelude-file")
     p.add_argument("--context-dir",

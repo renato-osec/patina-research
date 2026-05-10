@@ -151,7 +151,7 @@ async def sign_function(
     prelude: str | None = None,
     model: str = "sonnet",
     max_turns: int = 24,
-    submit_rounds: int = 3,
+    submit_rounds: int = 5,
     timeout_s: int | None = None,
     shared_ctx: TargetCtx | None = None,
     trace: bool = False,
@@ -415,7 +415,7 @@ if __name__ == "__main__":
     ap.add_argument("addr", help="0xADDR or function name")
     ap.add_argument("--model", default="sonnet")
     ap.add_argument("--max-turns", type=int, default=16)
-    ap.add_argument("--submit-rounds", type=int, default=3,
+    ap.add_argument("--submit-rounds", type=int, default=5,
                     help="max times the harness re-prompts the agent after "
                          "a non-perfect submit_signature (default 3)")
     ap.add_argument("--timeout", type=int, default=None,

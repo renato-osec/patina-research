@@ -18,7 +18,7 @@ from signer import sign_function
 def _add_args(p):
     p.add_argument("--prelude-file",
                    help="Path to a .rs file passed as nacre prelude on every check")
-    p.add_argument("--submit-rounds", type=int, default=3,
+    p.add_argument("--submit-rounds", type=int, default=5,
                    help="Max times the harness re-prompts the agent after "
                         "a non-perfect submit (default 3)")
 
