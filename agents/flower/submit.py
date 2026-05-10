@@ -143,13 +143,18 @@ def make(
         fn = apply_ctx.target_func()
         if fn is None:
             return f"skip: no fn at {apply_ctx.fn_addr:#x}"
-        renamed = (f" (renamed: {fn.name!r} -> {agent_name!r})"
-                   if agent_name and agent_name != fn.name else "")
+        cur_name = fn.name or ""
+        is_library = (cur_name.startswith(("_Z", "j_")) or "::" in cur_name)
+        do_rename = bool(agent_name) and agent_name != cur_name and not is_library
+        renamed = (f" (renamed: {cur_name!r} -> {agent_name!r})" if do_rename
+                   else (f" (rename refused: library symbol)" if agent_name and is_library
+                         else ""))
         if apply_ctx.recoveries is not None:
             try:
                 apply_ctx.recoveries.update(
                     apply_ctx.fn_addr, "flower",
-                    source=source, name=agent_name or fn.name)
+                    source=source,
+                    name=(agent_name if do_rename else cur_name))
             except Exception as e:
                 print(f"[flower] recoveries.update failed @ "
                       f"{apply_ctx.fn_addr:#x}: {type(e).__name__}: {e}",
@@ -157,7 +162,7 @@ def make(
         async with apply_ctx.write_lock:
             try:
                 with bv.undoable_transaction():
-                    if agent_name and agent_name != fn.name:
+                    if do_rename:
                         fn.name = agent_name
                     fn.comment = source
             except Exception as e:

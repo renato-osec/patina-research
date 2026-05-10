@@ -136,11 +136,19 @@ def make(
         fn = apply_ctx.target_func()
         if fn is None:
             return f"skip: no fn at {apply_ctx.fn_addr:#x}"
-        renamed = (f" (renamed: {fn.name!r} -> {agent_name!r})"
-                   if agent_name and agent_name != fn.name else "")
+        # WARP/library symbols (Rust ABI mangled or demangled paths) hold
+        # more information than any agent-chosen alias; lock them.
+        cur_name = fn.name or ""
+        is_library = (cur_name.startswith(("_Z", "j_")) or "::" in cur_name)
+        do_rename = bool(agent_name) and agent_name != cur_name and not is_library
+        renamed = (f" (renamed: {cur_name!r} -> {agent_name!r})"
+                   if do_rename else "")
+        if agent_name and not do_rename and is_library:
+            renamed = f" (rename refused: {cur_name!r} is library-recovered)"
+        bind_name = agent_name if do_rename else cur_name
         # nacre emits `... f(...)`; patch in the real symbol so binja's
         # type-parser binds to this fn.
-        named_decl = c_decl.replace(" f(", f" {agent_name or fn.name}(", 1)
+        named_decl = c_decl.replace(" f(", f" {bind_name}(", 1)
         try:
             import binaryninja as bn
         except Exception as e:
@@ -154,7 +162,7 @@ def make(
                         for name, ty in (pr.types if pr else {}).items():
                             bv.define_user_type(name, ty)
                             defined.append(str(name))
-                    if agent_name and agent_name != fn.name:
+                    if do_rename:
                         fn.name = agent_name
                     t, _ = bv.parse_type_string(named_decl)
                     fn.type = t

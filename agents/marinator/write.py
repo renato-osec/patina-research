@@ -22,9 +22,27 @@ def _tx(text: str):
     return {"content": [{"type": "text", "text": text}]}
 
 
+def is_library_name(name: str) -> bool:
+    """WARP-recovered Rust ABI symbols + demangled paths are
+    information-rich; never rename them. Heuristic: Itanium mangling
+    (`_Z...`) or Rust path notation (`::`)."""
+    if not name:
+        return False
+    if name.startswith(("_Z", "j_")):
+        return True
+    if "::" in name:
+        return True
+    return False
+
+
 def make(ctx: TargetCtx):
     @tool("rename_function",
-          "Rename a function. Identify by current name or 0xADDR.",
+          "Rename a function. Identify by current name or 0xADDR. "
+          "WARP-recovered Rust library symbols (anything containing "
+          "'::' or starting with '_Z'/'j_') are LOCKED - the harness "
+          "rejects renames on them because the original mangled / "
+          "demangled name is the highest-information identifier. "
+          "Only rename anonymous `sub_<addr>` placeholders.",
           {"target": str, "new_name": str})
     async def rename_function(args):
         target = args.get("target") or ""
@@ -35,6 +53,11 @@ def make(ctx: TargetCtx):
         if f is None:
             return _tx(f"error: function not found: {target}")
         old = f.name
+        if is_library_name(old):
+            return _tx(
+                f"refused: {old!r} is WARP/library-recovered; the "
+                "original symbol is more informative than any rename. "
+                "Skip this and rename only `sub_<addr>` placeholders.")
         async with ctx.write_lock:
             try:
                 with ctx.bv.undoable_transaction():
