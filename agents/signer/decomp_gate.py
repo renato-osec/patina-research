@@ -1,28 +1,5 @@
-# PreToolUse hook that locks WIDE untargeted dump tools - full-function
-# `decompile`/`get_il` AND large-window `disasm` - until the agent has
-# made its FIRST submission via `submit_signature`. The point: force
-# the workflow to start from the cheap targeted tools (register_trace ->
-# field_accesses -> il_around/il_range), draft a candidate signature,
-# submit, and only escalate to whole-function dumps when refining a
-# rejected submission. The system prompt already says this; the hook
-# ENFORCES it.
-#
-# When the gate is closed and the agent reaches for a wide tool, the
-# hook BLOCKS the call (decision: block) and tells the agent to submit
-# its current best guess immediately. It does NOT halt the run - bouncing
-# the agent toward submit is the whole point.
-#
-# Lock state:
-#   unlocked = False   - wide tools blocked
-#   unlocked = True    - wide tools allowed (any submit_signature has fired)
-#
-# Special-case `disasm`: legitimately targeted when n is small (a few
-# instructions around an address from field_accesses). It's only WIDE
-# when n exceeds DISASM_BYTES_LIMIT - that's the threshold above which
-# the agent is using it as a backdoor for full-function dumps.
-#
-# Returns (matcher, state) so the harness can both register the hook
-# and read the block-count after the run for telemetry.
+# PreToolUse gate: block wide decomp/get_il/disasm until first submit.
+# disasm exempt below DISASM_BYTES_LIMIT. Returns (matcher, state).
 from __future__ import annotations
 
 from claude_agent_sdk import HookMatcher
