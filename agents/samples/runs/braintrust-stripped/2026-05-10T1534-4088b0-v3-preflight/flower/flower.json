@@ -1,0 +1,49 @@
+{
+  "elapsed_s": 208.9,
+  "targets": 1,
+  "perfect": 1,
+  "failed": 0,
+  "tokens": [
+    29,
+    3496
+  ],
+  "cost_usd_total": 0.3205,
+  "results": [
+    {
+      "name": "hashmap_get_expect",
+      "address": "0x4088b0",
+      "tool_calls": 12,
+      "iter_count": 13,
+      "elapsed_s": 63.3,
+      "input_tokens": 29,
+      "output_tokens": 3496,
+      "cache_read_tokens": 240787,
+      "cache_create_tokens": 17852,
+      "cost_usd": 0.32047249999999994,
+      "error": "",
+      "transport_error": "",
+      "session_id": "44708ccc-eeec-418f-8913-ba7166e63c2f",
+      "submitted_source": "use std::collections::HashMap;\n\npub struct State {\n    pub stack: Vec<i64>,\n    pub program: Vec<i64>,\n    pub map: HashMap<i64, i64>,\n    pub side: bool,\n}\n\npub fn hashmap_get_expect(map_ptr: &State, lookup_key: i64, side_flag: bool) -> i64 {\n    if map_ptr.side == side_flag {\n        return lookup_key;\n    }\n    *map_ptr.map.get(&lookup_key).expect(\"no entry found for key\")\n}",
+      "submitted_name": "hashmap_get_expect",
+      "confidence": 0.95,
+      "rationale": "Short-circuits to lookup_key when side flag matches; otherwise returns *map.get(&lookup_key).expect(\"no entry found for key\").",
+      "final_score": 1.0,
+      "final_perfect": true,
+      "submit_attempts": 1,
+      "budget_exhausted": false,
+      "rust_var_count": 25,
+      "binary_var_count": 52,
+      "bound_count": 25,
+      "diff_count": 0,
+      "rust_loc": 13,
+      "hlil_loc": 51,
+      "compression_ratio": 0.255,
+      "wide_blocks": 1,
+      "wide_unlocked": false,
+      "regions": [],
+      "complexity_gated": false,
+      "signer_bounced": false,
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/44708ccc-eeec-418f-8913-ba7166e63c2f.jsonl"
+    }
+  ]
+}

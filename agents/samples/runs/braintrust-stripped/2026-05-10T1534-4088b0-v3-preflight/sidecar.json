@@ -1,0 +1,10 @@
+{
+  "0x4088b0": {
+    "signer": {
+      "name": "hashmap_get_expect",
+      "rust_signature": "(this: &State, lookup_key: i64, side_flag: bool) -> i64",
+      "rust_types": "use std::collections::HashMap;\n\npub struct State {\n    pub stack: Vec<i64>,\n    pub program: Vec<i64>,\n    pub map: HashMap<i64, i64>,\n    pub side: bool,\n}",
+      "score": 0.8
+    }
+  }
+}

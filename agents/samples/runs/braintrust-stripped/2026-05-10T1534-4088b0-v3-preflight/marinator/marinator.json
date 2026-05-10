@@ -1,0 +1,51 @@
+{
+  "elapsed_s": 209.1,
+  "targets": 1,
+  "perfect": 0,
+  "failed": 0,
+  "tokens": [
+    22,
+    10165
+  ],
+  "cost_usd_total": 0.2961,
+  "results": [
+    {
+      "name": "sub_4088b0",
+      "address": "0x4088b0",
+      "tool_calls": 12,
+      "iter_count": 13,
+      "elapsed_s": 209.1,
+      "input_tokens": 22,
+      "output_tokens": 10165,
+      "cache_read_tokens": 262960,
+      "cache_create_tokens": 17108,
+      "cost_usd": 0.29608199999999996,
+      "error": "",
+      "transport_error": "",
+      "session_id": "19c9f35a-9b74-45cc-9b55-f97b2778a2c1",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_braintrust_4088b0/warper/binary.warped.warped.bndb",
+      "summary": {
+        "renamed_vars": 14,
+        "renamed_funcs": 1,
+        "retypes": 0,
+        "comments": 1,
+        "types_declared": 0,
+        "prototype_set": 1
+      },
+      "tool_counts": {
+        "ToolSearch": 3,
+        "decompile": 2,
+        "stack_vars": 1,
+        "rename_variables": 2,
+        "set_function_prototype": 1,
+        "rename_function": 1,
+        "set_function_comment": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=12 blocks=15"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/19c9f35a-9b74-45cc-9b55-f97b2778a2c1.jsonl"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[flower] 1 targets, workers=1, model=opus
+[start] hashmap_get_expect @ 0x4088b0
+[done ] hashmap_get_expect  [OK]  source='use std::collections::HashMap;\n\npub struct State {\n    pub stack: Vec<i64>,\n    pub program: Vec<i64>,\n    pub map: Hash'  final_score=1.00  perfect=True  exhausted=False  submits=1  tools=12 iters=13 $0.320 t=63.3s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust_4088b0/signer_v2/binary.warped.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_braintrust_4088b0/flower_v3/flower.fault (fd=10)
+[flower] analysis drained in 0.2s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_braintrust_4088b0/flower_v3/binary.warped.warped.marinated.signed.flowered.bndb (0.1s)
+[flower] done in 208.9s, 1/1 perfect, 0 failed, 3,525 tokens, $0.321, output outputs/chain_braintrust_4088b0/flower_v3/flower.json

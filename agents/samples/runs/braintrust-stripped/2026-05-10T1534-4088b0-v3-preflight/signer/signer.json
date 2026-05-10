@@ -1,0 +1,44 @@
+{
+  "elapsed_s": 244.6,
+  "targets": 1,
+  "perfect": 0,
+  "failed": 0,
+  "tokens": [
+    30,
+    13879
+  ],
+  "cost_usd_total": 0.7064,
+  "results": [
+    {
+      "name": "hashmap_get_expect",
+      "address": "0x4088b0",
+      "tool_calls": 45,
+      "iter_count": 18,
+      "elapsed_s": 244.6,
+      "input_tokens": 30,
+      "output_tokens": 13879,
+      "cache_read_tokens": 289825,
+      "cache_create_tokens": 23973,
+      "cost_usd": 0.70642505,
+      "error": "",
+      "transport_error": "",
+      "session_id": "c509c6d0-a34a-44ce-9b67-c896be93d75a",
+      "submitted_decl": "use std::collections::HashMap;\n\npub struct State {\n    pub stack: Vec<i64>,\n    pub program: Vec<i64>,\n    pub map: HashMap<i64, i64>,\n    pub side: bool,\n}\n\n(this: &State, lookup_key: i64, side_flag: bool) -> i64",
+      "submitted_types": "use std::collections::HashMap;\n\npub struct State {\n    pub stack: Vec<i64>,\n    pub program: Vec<i64>,\n    pub map: HashMap<i64, i64>,\n    pub side: bool,\n}",
+      "submitted_signature": "(this: &State, lookup_key: i64, side_flag: bool) -> i64",
+      "confidence": 0.75,
+      "rationale": "Receiver State has two Vec<i64> at 0..0x30 (per drop_in_place::source::State which calls RawVec::drop on both halves), HashMap<i64, i64> at 0x30..0x60 (ctrl/bucket_mask/growth_left/hash_builder reads + 16-byte bucket stride confirms (i64, i64)), bool at 0x60 compared with side_flag.",
+      "final_score": 0.8,
+      "final_perfect": false,
+      "submit_attempts": 1,
+      "budget_exhausted": false,
+      "wide_blocks": 2,
+      "wide_unlocked": true,
+      "c_decl": "",
+      "c_structs": "",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/c509c6d0-a34a-44ce-9b67-c896be93d75a.jsonl"
+    }
+  ]
+}
