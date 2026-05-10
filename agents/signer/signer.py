@@ -346,7 +346,9 @@ async def sign_function(
     stream = query(prompt=user_prompt, options=opts)
     prefix = f"[{name}] " if trace else None
     try:
-        budget = int(timeout_s) if timeout_s is not None else PER_FN_TIMEOUT_S
+        base = int(timeout_s) if timeout_s is not None else PER_FN_TIMEOUT_S
+        from cli import scale_timeout_by_bbs
+        budget = scale_timeout_by_bbs(base, f) if f else base
         await run_with_timeout(_drive(stream, rec, prefix=prefix), rec, budget)
     finally:
         if owns_ctx:

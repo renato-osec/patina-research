@@ -162,6 +162,21 @@ def per_fn_timeout(default_s: int = 600) -> int:
     return int(os.environ.get("PER_FN_TIMEOUT_S", str(default_s)))
 
 
+def scale_timeout_by_bbs(base_s: int, fn: Any) -> int:
+    """Scale a base timeout by basic-block count. Big fns get more time."""
+    try:
+        n = len(list(fn.basic_blocks))
+    except Exception:
+        return base_s
+    if n >= 300:
+        return base_s * 3
+    if n >= 100:
+        return base_s * 2
+    if n >= 30:
+        return int(base_s * 1.5)
+    return base_s
+
+
 # --- stderr capture for compiler-backed tools (rustc -> native fd 2) ---
 
 import contextlib as _contextlib
