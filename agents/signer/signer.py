@@ -150,7 +150,7 @@ async def sign_function(
     *,
     prelude: str | None = None,
     model: str = "sonnet",
-    max_turns: int = 16,
+    max_turns: int = 24,
     submit_rounds: int = 3,
     timeout_s: int | None = None,
     shared_ctx: TargetCtx | None = None,
@@ -226,8 +226,12 @@ async def sign_function(
     else:
         gate_matcher, gate_state = t_gate.make(server_name="signer")
         hooks = {"PreToolUse": [gate_matcher]}
+    import turn_budget as t_budget
+    budget_matcher, _budget_state = t_budget.make(max_turns=max_turns)
+    post_hooks = [budget_matcher]
     if submit_hook is not None:
-        hooks["PostToolUse"] = [submit_hook]
+        post_hooks.append(submit_hook)
+    hooks["PostToolUse"] = post_hooks
 
     # Read-only subagent for cross-fn context (haiku, no submit tools).
     inspect_tool_names = sorted(

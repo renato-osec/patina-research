@@ -47,7 +47,7 @@ class StageSpec:
     add_extra_args: Callable[[argparse.ArgumentParser], None] | None = None
     description: str = ""
     default_model: str = "opus"
-    default_max_turns: int = 16  # flower lower; opus ramble = sdk exit-1.
+    default_max_turns: int = 24  # turn_budget hook warns at -4 + -1.
     # Sidecar namespaces this stage may write. Empty = read-only.
     write_namespaces: set[str] = field(default_factory=set)
     extra_run_kwargs: Callable[[argparse.Namespace], dict] = \

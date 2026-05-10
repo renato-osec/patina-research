@@ -220,7 +220,7 @@ def main() -> int:
     p.add_argument("--model", "-m", default=None,
                    help="Override every stage's model. Default: each "
                         "stage's own (marinator=sonnet, signer/flower=opus)")
-    p.add_argument("--max-turns", type=int, default=16)
+    p.add_argument("--max-turns", type=int, default=24)
     p.add_argument("--submit-rounds", type=int, default=3)
     p.add_argument("--timeout", type=int, default=None)
     p.add_argument("--prelude-file")
