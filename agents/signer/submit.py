@@ -15,6 +15,33 @@ def _txt(msg: str) -> dict:
     return {"content": [{"type": "text", "text": msg}]}
 
 
+def _binja_propagation(bv, fn, defined_types: list[str]) -> dict:
+    """Snapshot where binja propagated this prototype + types after apply.
+
+    Returns: callers, callees, type_refs (per user struct).
+    Best-effort; reanalyze runs async, so callsite/var derivations may
+    still be settling. Topology fields (callers/callees) are stable.
+    """
+    out: dict = {"callers": [], "callees": [], "type_refs": {}}
+    try:
+        for c in (fn.callers or []):
+            out["callers"].append({"addr": f"{c.start:#x}", "name": c.name})
+    except Exception:
+        pass
+    try:
+        for c in (fn.callees or []):
+            out["callees"].append({"addr": f"{c.start:#x}", "name": c.name})
+    except Exception:
+        pass
+    for name in defined_types:
+        try:
+            refs = list(bv.get_code_refs_for_type(name) or [])
+        except Exception:
+            refs = []
+        out["type_refs"][name] = [f"{r.address:#x}" for r in refs[:64]]
+    return out
+
+
 def make(
     *,
     validator: Validator | None = None,
@@ -31,6 +58,8 @@ def make(
         "confidence": 0.0, "rationale": "",
         "attempts": 0, "validations": [],
         "exhausted": False, "scolded": False, "applied": "",
+        "c_decl": "", "c_structs": "", "binja_signature": "",
+        "binja_propagation": {},
     }
 
     @tool("submit_signature",
@@ -100,6 +129,8 @@ def make(
             return f"skip: nacre.c_signature: {type(e).__name__}: {e}"
         c_decl = (res.get("decl") or "").strip()
         structs = (res.get("structs") or "").strip()
+        captured["c_decl"] = c_decl
+        captured["c_structs"] = structs
         if not c_decl:
             return "skip: empty c_decl"
         bv = apply_ctx.bv
@@ -129,6 +160,8 @@ def make(
                     t, _ = bv.parse_type_string(named_decl)
                     fn.type = t
                     fn.reanalyze(bn.FunctionUpdateType.UserFunctionUpdate)
+                captured["binja_signature"] = str(fn.type)
+                captured["binja_propagation"] = _binja_propagation(bv, fn, defined)
             except Exception as e:
                 return f"err: apply: {type(e).__name__}: {e}"
         return f"ok: proto + {len(defined)} type(s){renamed}"

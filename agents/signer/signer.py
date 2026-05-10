@@ -10,7 +10,7 @@ sys.path[:0] = [str(Path(__file__).resolve().parent),
 os.environ.setdefault("BN_DISABLE_USER_PLUGINS", "1")
 
 import asyncio
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import binaryninja as bn
 from claude_agent_sdk import query
@@ -130,6 +130,10 @@ class SignerResult(AgentResult):
     budget_exhausted: bool = False  # max_rounds hit without final perfect.
     wide_blocks: int = 0  # PreToolUse blocks of wide decomp before first check.
     wide_unlocked: bool = False
+    c_decl: str = ""              # nacre-translated C decl applied to bv
+    c_structs: str = ""           # struct catalog defined alongside the decl
+    binja_signature: str = ""     # str(fn.type) post-apply (binja's rendering)
+    binja_propagation: dict = field(default_factory=dict)  # callers/callees/type_refs
 
 
 def transcript_path(rec: "SignerResult", cwd: str | None = None) -> Path | None:
@@ -363,6 +367,10 @@ async def sign_function(
     rec.submitted_decl = captured["decl"]
     rec.submitted_types = captured.get("types", "")
     rec.submitted_signature = captured.get("signature", "")
+    rec.c_decl = captured.get("c_decl", "")
+    rec.c_structs = captured.get("c_structs", "")
+    rec.binja_signature = captured.get("binja_signature", "")
+    rec.binja_propagation = captured.get("binja_propagation", {})
     rec.confidence = captured["confidence"]
     rec.rationale = captured["rationale"]
     rec.submit_attempts = captured["attempts"]
