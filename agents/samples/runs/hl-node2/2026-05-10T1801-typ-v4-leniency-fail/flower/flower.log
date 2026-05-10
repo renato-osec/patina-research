@@ -1,0 +1,19 @@
+[flower] 6 targets, workers=2, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] compute_margin_requirement_by_mode  [OK]  source='pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=15 iters=16 $0.760 t=188.7s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] build_adl_candidate_set  [FAILED]  source='use std::collections::{BTreeMap, BTreeSet, HashMap};\n\n#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub struct '  final_score=0.99  perfect=False  exhausted=True  submits=5  tools=24 iters=25 $1.668 t=348.0s
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_position_liquidation_check  [FAILED]  source='#![allow(dead_code)]\n\nextern "C" {\n    fn sub_555556b543a0(out: *mut u128, state: *const u128);\n    fn sub_555556b3f830('  final_score=1.00  perfect=False  exhausted=True  submits=5  tools=16 iters=17 $2.217 t=593.5s
+[done ] compute_user_margin_and_shortfall  ERROR: timeout after 900s  (905.3s)
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [OK]  source='pub struct Clearinghouse { _data: [u64; 2700] }\n\npub fn compute_adl_ranking_score(\n    clearinghouse_ptr: &Clearinghouse'  final_score=1.00  perfect=True  exhausted=False  submits=3  tools=25 iters=26 $0.983 t=202.6s
+[done ] clearinghouse_adl_orchestrator  [OK]  source='use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, '  final_score=1.00  perfect=True  exhausted=False  submits=3  tools=21 iters=22 $1.544 t=254.9s
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v4/flower/flower.fault (fd=12)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/flower/hl-node2.warped.marinated.signed.flowered.bndb (2.1s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/flower/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 1861.4s, 3/6 perfect, 2 failed, 130,975 tokens, $7.172, output outputs/chain_typ_v4/flower/flower.json

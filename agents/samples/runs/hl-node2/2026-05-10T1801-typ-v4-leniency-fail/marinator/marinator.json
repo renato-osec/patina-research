@@ -1,0 +1,227 @@
+{
+  "elapsed_s": 1371.6,
+  "targets": 6,
+  "perfect": 0,
+  "failed": 0,
+  "tokens": [
+    78,
+    88428
+  ],
+  "cost_usd_total": 2.3444,
+  "results": [
+    {
+      "name": "build_adl_candidate_set",
+      "address": "0x555556266b10",
+      "tool_calls": 6,
+      "iter_count": 7,
+      "elapsed_s": 201.7,
+      "input_tokens": 12,
+      "output_tokens": 10900,
+      "cache_read_tokens": 146950,
+      "cache_create_tokens": 25592,
+      "cost_usd": 0.304092,
+      "error": "",
+      "transport_error": "",
+      "session_id": "0562afa6-dd7e-4ab2-ba97-39e9d5a58d06",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 2,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 2,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=96"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/0562afa6-dd7e-4ab2-ba97-39e9d5a58d06.jsonl"
+    },
+    {
+      "name": "compute_margin_requirement_by_mode",
+      "address": "0x555556b61a50",
+      "tool_calls": 13,
+      "iter_count": 14,
+      "elapsed_s": 490.9,
+      "input_tokens": 22,
+      "output_tokens": 27677,
+      "cache_read_tokens": 411509,
+      "cache_create_tokens": 42870,
+      "cost_usd": 0.6999442,
+      "error": "",
+      "transport_error": "",
+      "session_id": "f0b3d101-d8af-4741-8559-b0be4ffdfb64",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 13,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 2,
+        "decompile": 3,
+        "stack_vars": 1,
+        "Read": 1,
+        "rename_variables": 2,
+        "rename_variable": 3,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=33"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/f0b3d101-d8af-4741-8559-b0be4ffdfb64.jsonl"
+    },
+    {
+      "name": "compute_user_margin_and_shortfall",
+      "address": "0x555556bb4fb0",
+      "tool_calls": 7,
+      "iter_count": 8,
+      "elapsed_s": 275.4,
+      "input_tokens": 13,
+      "output_tokens": 17967,
+      "cache_read_tokens": 203445,
+      "cache_create_tokens": 38257,
+      "cost_usd": 0.47456025,
+      "error": "",
+      "transport_error": "",
+      "session_id": "e73cd0a7-5259-49c3-b02c-a65e8673988a",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 16,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0,
+        "notes": "Batch-renamed 16 variables in compute_user_margin_and_shortfall: pos_copy (0xa0-byte position copy buffer / tag scratch), saved_cross_margin_flag (loop-persistent cross-margin mode flag), mkt_data_field_0x40 (int128 oracle/market-data field at asset*0x60+0x40), and the 12 output-struct slots from compute_margin_requirement_by_mode (marg_out_equity_scalars, marg_out_mreq_opts, marg_out_mreq_scalars, marg_out_abs_ntl_opts, marg_out_abs_ntl_scalars, marg_out_raw_eq_opts, marg_out_raw_eq_scalars, equity_delta_opt_b, mreq_delta_opt_b, abs_ntl_delta_opt_b, raw_eq_delta_opt_b). Function name already correct; accumulator variables (total_equity_*, margin_req_*, abs_ntl_*), BTree traversal vars, and result struct fields were already well-annotated."
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 2,
+        "stack_vars": 1,
+        "rename_variables": 2,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=44"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/e73cd0a7-5259-49c3-b02c-a65e8673988a.jsonl"
+    },
+    {
+      "name": "compute_adl_ranking_score",
+      "address": "0x555556abb140",
+      "tool_calls": 7,
+      "iter_count": 8,
+      "elapsed_s": 305.5,
+      "input_tokens": 13,
+      "output_tokens": 18173,
+      "cache_read_tokens": 228924,
+      "cache_create_tokens": 40157,
+      "cost_usd": 0.49241095,
+      "error": "",
+      "transport_error": "",
+      "session_id": "8030bfff-d8a7-4436-bd7d-e063219fe85a",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 6,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 1,
+        "types_declared": 0
+      },
+      "tool_counts": {
+        "ToolSearch": 1,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 2,
+        "set_function_comment": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=67"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/8030bfff-d8a7-4436-bd7d-e063219fe85a.jsonl"
+    },
+    {
+      "name": "clearinghouse_adl_orchestrator",
+      "address": "0x555556ac3850",
+      "tool_calls": 26,
+      "iter_count": 0,
+      "elapsed_s": 605.3,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_create_tokens": 0,
+      "cost_usd": 0.0,
+      "error": "timeout after 600s",
+      "transport_error": "",
+      "session_id": "",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 4,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0,
+        "notes": "var_3b8->user_equity_qty (128-bit OptionUnitQty from compute_user_margin_and_shortfall), var_6c0->adl_value_unit (per-asset accumulated ADL unit denominator), var_6d0->user_equity_unit (unit field extracted from user_equity_qty), var_5a8->nonzero_bal_log_vec (Vec{cap,ptr} for BUG non-zero-balance log entries in final verification pass). High-frequency vars var_9c0/var_8f8/var_798 are polymorphic scratch, skipped. Register-based SSA vars (r13_8, rdi_97, rbx_33, etc.) unsafe to rename as base names cover many unrelated SSA versions throughout 2621-line function. Most callee functions and loop variables were already meaningfully named."
+      },
+      "tool_counts": {
+        "ToolSearch": 2,
+        "decompile": 1,
+        "stack_vars": 1,
+        "Bash": 19,
+        "Read": 1,
+        "rename_variables": 1,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=610"
+      ],
+      "transcript": ""
+    },
+    {
+      "name": "compute_position_liquidation_check",
+      "address": "0x555556beadd0",
+      "tool_calls": 14,
+      "iter_count": 15,
+      "elapsed_s": 226.1,
+      "input_tokens": 18,
+      "output_tokens": 13711,
+      "cache_read_tokens": 310478,
+      "cache_create_tokens": 19747,
+      "cost_usd": 0.3734006499999999,
+      "error": "",
+      "transport_error": "",
+      "session_id": "1e5edf42-7405-48aa-918f-edfbadc0a487",
+      "bndb": "/home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.bndb",
+      "summary": {
+        "renamed_vars": 12,
+        "renamed_funcs": 0,
+        "retypes": 0,
+        "comments": 0,
+        "types_declared": 0,
+        "prototypes_set": 1
+      },
+      "tool_counts": {
+        "ToolSearch": 2,
+        "decompile": 1,
+        "stack_vars": 1,
+        "rename_variables": 2,
+        "set_function_prototype": 2,
+        "get_user_type": 5,
+        "finish": 1
+      },
+      "log": [
+        "[budget] max_turns=24 blocks=23"
+      ],
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/1e5edf42-7405-48aa-918f-edfbadc0a487.jsonl"
+    }
+  ]
+}

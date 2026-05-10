@@ -1,0 +1,269 @@
+{
+  "elapsed_s": 1762.6,
+  "targets": 6,
+  "perfect": 4,
+  "failed": 0,
+  "tokens": [
+    157,
+    94355
+  ],
+  "cost_usd_total": 4.8946,
+  "results": [
+    {
+      "name": "build_adl_candidate_set",
+      "address": "0x555556266b10",
+      "tool_calls": 27,
+      "iter_count": 16,
+      "elapsed_s": 580.4,
+      "input_tokens": 47,
+      "output_tokens": 40008,
+      "cache_read_tokens": 529952,
+      "cache_create_tokens": 71097,
+      "cost_usd": 1.7455226499999996,
+      "error": "",
+      "transport_error": "",
+      "session_id": "a376035d-69bd-4b8d-a5a6-11fac68e1a48",
+      "submitted_decl": "use std::collections::{BTreeMap, BTreeSet, HashMap};\n\npub struct UserAddress(pub [u8; 20]);\n\npub struct PositionState {\n    pub coin: u64,\n    pub size: i128,\n    pub entry_px: u128,\n    pub leverage: u64,\n    pub margin: u64,\n    pub unrealized: i128,\n    pub funding: i128,\n}\n\npub struct OrderState {\n    pub oid: u64,\n    pub price: u128,\n    pub size: u128,\n    pub side: u64,\n    pub flags: u64,\n    pub trigger: u128,\n}\n\npub struct UserState {\n    pub equity: u128,\n    pub balance: u128,\n    pub margin_used: u128,\n    pub positions: BTreeMap<u64, PositionState>,\n    pub orders: BTreeMap<u64, OrderState>,\n}\n\npub struct Exchange {\n    pub asset_ctxs: HashMap<u64, u128>,\n    pub spot_ctxs: HashMap<u64, u128>,\n    pub mark_pxs: HashMap<u64, u128>,\n    pub oracle_pxs: HashMap<u64, u128>,\n    pub asset_meta: HashMap<u64, u128>,\n    pub spot_meta: HashMap<u64, u128>,\n    pub vault_states: HashMap<UserAddress, u128>,\n    pub clearing_state: HashMap<UserAddress, u128>,\n    pub spot_balances: HashMap<UserAddress, u128>,\n    pub funding_state: HashMap<u64, u128>,\n    pub adl_state: HashMap<u64, u128>,\n    pub asset_books: HashMap<u64, u128>,\n    pub spot_books: HashMap<u64, u128>,\n    pub triggers: HashMap<u64, u128>,\n    pub schedules: HashMap<u64, u128>,\n    pub recent_trades: HashMap<u64, u128>,\n    pub fills: HashMap<u64, u128>,\n    pub events: HashMap<u64, u128>,\n    pub liquidations: HashMap<u64, u128>,\n    pub vault_owners: HashMap<UserAddress, u128>,\n    pub vault_followers: HashMap<UserAddress, u128>,\n    pub user_index: HashMap<UserAddress, u128>,\n    pub fee_credits: HashMap<UserAddress, u128>,\n    pub referral_state: HashMap<UserAddress, u128>,\n    pub staking: HashMap<UserAddress, u128>,\n    pub airdrops: HashMap<UserAddress, u128>,\n    pub api_keys: HashMap<UserAddress, u128>,\n    pub builder_codes: HashMap<UserAddress, u128>,\n    pub leverage_caps: HashMap<u64, u128>,\n    pub margin_modes: HashMap<u64, u128>,\n    pub asset_class: HashMap<u64, u128>,\n    pub asset_funding: HashMap<u64, u128>,\n    pub asset_premiums: HashMap<u64, u128>,\n    pub asset_volume: HashMap<u64, u128>,\n    pub asset_open_interest: HashMap<u64, u128>,\n    pub asset_indices: HashMap<u64, u128>,\n    pub spot_pairs: HashMap<u64, u128>,\n    pub spot_volume: HashMap<u64, u128>,\n    pub spot_indices: HashMap<u64, u128>,\n    pub price_history: HashMap<u64, u128>,\n    pub funding_history: HashMap<u64, u128>,\n    pub vol_history: HashMap<u64, u128>,\n    pub trade_history: HashMap<u64, u128>,\n    pub fill_history: HashMap<u64, u128>,\n    pub block_history: HashMap<u64, u128>,\n    pub clearing_meta: HashMap<u64, u128>,\n    pub coin_meta: HashMap<u64, u128>,\n    pub iter_state: Option<Box<UserState>>,\n    pub epoch: u128,\n    pub block_time: u128,\n    pub block_height: u128,\n    pub default_user: UserState,\n    pub recent_funding: BTreeMap<u64, u128>,\n    pub recent_premiums: BTreeMap<u64, u128>,\n    pub user_summaries: BTreeMap<UserAddress, u128>,\n    pub user_perp_summaries: BTreeMap<UserAddress, u128>,\n    pub vault_summaries: BTreeMap<UserAddress, u128>,\n    pub fill_summaries: BTreeMap<u64, u128>,\n    pub trade_summaries: BTreeMap<u64, u128>,\n    pub users: BTreeMap<UserAddress, UserState>,\n}\n\n(this: &Exchange) -> BTreeSet<UserAddress>",
+      "submitted_types": "use std::collections::{BTreeMap, BTreeSet, HashMap};\n\npub struct UserAddress(pub [u8; 20]);\n\npub struct PositionState {\n    pub coin: u64,\n    pub size: i128,\n    pub entry_px: u128,\n    pub leverage: u64,\n    pub margin: u64,\n    pub unrealized: i128,\n    pub funding: i128,\n}\n\npub struct OrderState {\n    pub oid: u64,\n    pub price: u128,\n    pub size: u128,\n    pub side: u64,\n    pub flags: u64,\n    pub trigger: u128,\n}\n\npub struct UserState {\n    pub equity: u128,\n    pub balance: u128,\n    pub margin_used: u128,\n    pub positions: BTreeMap<u64, PositionState>,\n    pub orders: BTreeMap<u64, OrderState>,\n}\n\npub struct Exchange {\n    pub asset_ctxs: HashMap<u64, u128>,\n    pub spot_ctxs: HashMap<u64, u128>,\n    pub mark_pxs: HashMap<u64, u128>,\n    pub oracle_pxs: HashMap<u64, u128>,\n    pub asset_meta: HashMap<u64, u128>,\n    pub spot_meta: HashMap<u64, u128>,\n    pub vault_states: HashMap<UserAddress, u128>,\n    pub clearing_state: HashMap<UserAddress, u128>,\n    pub spot_balances: HashMap<UserAddress, u128>,\n    pub funding_state: HashMap<u64, u128>,\n    pub adl_state: HashMap<u64, u128>,\n    pub asset_books: HashMap<u64, u128>,\n    pub spot_books: HashMap<u64, u128>,\n    pub triggers: HashMap<u64, u128>,\n    pub schedules: HashMap<u64, u128>,\n    pub recent_trades: HashMap<u64, u128>,\n    pub fills: HashMap<u64, u128>,\n    pub events: HashMap<u64, u128>,\n    pub liquidations: HashMap<u64, u128>,\n    pub vault_owners: HashMap<UserAddress, u128>,\n    pub vault_followers: HashMap<UserAddress, u128>,\n    pub user_index: HashMap<UserAddress, u128>,\n    pub fee_credits: HashMap<UserAddress, u128>,\n    pub referral_state: HashMap<UserAddress, u128>,\n    pub staking: HashMap<UserAddress, u128>,\n    pub airdrops: HashMap<UserAddress, u128>,\n    pub api_keys: HashMap<UserAddress, u128>,\n    pub builder_codes: HashMap<UserAddress, u128>,\n    pub leverage_caps: HashMap<u64, u128>,\n    pub margin_modes: HashMap<u64, u128>,\n    pub asset_class: HashMap<u64, u128>,\n    pub asset_funding: HashMap<u64, u128>,\n    pub asset_premiums: HashMap<u64, u128>,\n    pub asset_volume: HashMap<u64, u128>,\n    pub asset_open_interest: HashMap<u64, u128>,\n    pub asset_indices: HashMap<u64, u128>,\n    pub spot_pairs: HashMap<u64, u128>,\n    pub spot_volume: HashMap<u64, u128>,\n    pub spot_indices: HashMap<u64, u128>,\n    pub price_history: HashMap<u64, u128>,\n    pub funding_history: HashMap<u64, u128>,\n    pub vol_history: HashMap<u64, u128>,\n    pub trade_history: HashMap<u64, u128>,\n    pub fill_history: HashMap<u64, u128>,\n    pub block_history: HashMap<u64, u128>,\n    pub clearing_meta: HashMap<u64, u128>,\n    pub coin_meta: HashMap<u64, u128>,\n    pub iter_state: Option<Box<UserState>>,\n    pub epoch: u128,\n    pub block_time: u128,\n    pub block_height: u128,\n    pub default_user: UserState,\n    pub recent_funding: BTreeMap<u64, u128>,\n    pub recent_premiums: BTreeMap<u64, u128>,\n    pub user_summaries: BTreeMap<UserAddress, u128>,\n    pub user_perp_summaries: BTreeMap<UserAddress, u128>,\n    pub vault_summaries: BTreeMap<UserAddress, u128>,\n    pub fill_summaries: BTreeMap<u64, u128>,\n    pub trade_summaries: BTreeMap<u64, u128>,\n    pub users: BTreeMap<UserAddress, UserState>,\n}",
+      "submitted_signature": "(this: &Exchange) -> BTreeSet<UserAddress>",
+      "confidence": 0.6,
+      "rationale": "Return is BTreeSet<UserAddress> (24B node+height+length matching sret); btree_insert_address inserts a 20-byte UserAddress; receiver Exchange holds BTreeMap<UserAddress, UserState> at +0xa08, default UserState at +0x940, iterator state at +0x8e0.",
+      "final_score": 1.0,
+      "final_perfect": true,
+      "submit_attempts": 5,
+      "budget_exhausted": false,
+      "wide_blocks": 0,
+      "wide_unlocked": true,
+      "c_decl": "void f(struct std_collections_BTreeSet_UserAddress_* _ret, struct Exchange* this_)",
+      "c_structs": "struct std_collections_BTreeMap_UserAddress__UserState_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, UserAddress, UserState, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_collections_BTreeMap_u64__u128_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, u128, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_collections_BTreeMap_UserAddress__u128_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, UserAddress, u128, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_collections_BTreeMap_u64__OrderState_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, OrderState, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_collections_BTreeMap_u64__PositionState_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, PositionState, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_ptr_NonNull_u8_ {\n    void* pointer;\n};\n\nstruct std_hash_RandomState {\n    uint64_t k0;\n    uint64_t k1;\n};\n\nstruct std_collections_BTreeMap_UserAddress__alloc_collections_btree_set_val_SetValZST_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, UserAddress, alloc::collections::btree::set_val::SetValZST, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct UserState {\n    __uint128_t equity;\n    __uint128_t balance;\n    __uint128_t margin_used;\n    struct std_collections_BTreeMap_u64__PositionState_ positions;\n    struct std_collections_BTreeMap_u64__OrderState_ orders;\n};\n\nstruct hashbrown_raw_RawTableInner {\n    struct std_ptr_NonNull_u8_ ctrl;\n    uintptr_t bucket_mask;\n    uintptr_t growth_left;\n    uintptr_t items;\n};\n\nstruct std_collections_BTreeSet_UserAddress_ {\n    struct std_collections_BTreeMap_UserAddress__alloc_collections_btree_set_val_SetValZST_ map;\n};\n\nstruct hashbrown_raw_RawTable__u64__u128__ {\n    struct hashbrown_raw_RawTableInner table;\n};\n\nstruct hashbrown_raw_RawTable__UserAddress__u128__ {\n    struct hashbrown_raw_RawTableInner table;\n};\n\nstruct hashbrown_map_HashMap_u64__u128__std_hash_RandomState_ {\n    struct hashbrown_raw_RawTable__u64__u128__ table;\n    struct std_hash_RandomState hash_builder;\n};\n\nstruct hashbrown_map_HashMap_UserAddress__u128__std_hash_RandomState_ {\n    struct hashbrown_raw_RawTable__UserAddress__u128__ table;\n    struct std_hash_RandomState hash_builder;\n};\n\nstruct std_collections_HashMap_u64__u128_ {\n    struct hashbrown_map_HashMap_u64__u128__std_hash_RandomState_ base;\n};\n\nstruct std_collections_HashMap_UserAddress__u128_ {\n    struct hashbrown_map_HashMap_UserAddress__u128__std_hash_RandomState_ base;\n};\n\nstruct Exchange {\n    struct std_collections_HashMap_u64__u128_ asset_ctxs;\n    struct std_collections_HashMap_u64__u128_ spot_ctxs;\n    struct std_collections_HashMap_u64__u128_ mark_pxs;\n    struct std_collections_HashMap_u64__u128_ oracle_pxs;\n    struct std_collections_HashMap_u64__u128_ asset_meta;\n    struct std_collections_HashMap_u64__u128_ spot_meta;\n    struct std_collections_HashMap_UserAddress__u128_ vault_states;\n    struct std_collections_HashMap_UserAddress__u128_ clearing_state;\n    struct std_collections_HashMap_UserAddress__u128_ spot_balances;\n    struct std_collections_HashMap_u64__u128_ funding_state;\n    struct std_collections_HashMap_u64__u128_ adl_state;\n    struct std_collections_HashMap_u64__u128_ asset_books;\n    struct std_collections_HashMap_u64__u128_ spot_books;\n    struct std_collections_HashMap_u64__u128_ triggers;\n    struct std_collections_HashMap_u64__u128_ schedules;\n    struct std_collections_HashMap_u64__u128_ recent_trades;\n    struct std_collections_HashMap_u64__u128_ fills;\n    struct std_collections_HashMap_u64__u128_ events;\n    struct std_collections_HashMap_u64__u128_ liquidations;\n    struct std_collections_HashMap_UserAddress__u128_ vault_owners;\n    struct std_collections_HashMap_UserAddress__u128_ vault_followers;\n    struct std_collections_HashMap_UserAddress__u128_ user_index;\n    struct std_collections_HashMap_UserAddress__u128_ fee_credits;\n    struct std_collections_HashMap_UserAddress__u128_ referral_state;\n    struct std_collections_HashMap_UserAddress__u128_ staking;\n    struct std_collections_HashMap_UserAddress__u128_ airdrops;\n    struct std_collections_HashMap_UserAddress__u128_ api_keys;\n    struct std_collections_HashMap_UserAddress__u128_ builder_codes;\n    struct std_collections_HashMap_u64__u128_ leverage_caps;\n    struct std_collections_HashMap_u64__u128_ margin_modes;\n    struct std_collections_HashMap_u64__u128_ asset_class;\n    struct std_collections_HashMap_u64__u128_ asset_funding;\n    struct std_collections_HashMap_u64__u128_ asset_premiums;\n    struct std_collections_HashMap_u64__u128_ asset_volume;\n    struct std_collections_HashMap_u64__u128_ asset_open_interest;\n    struct std_collections_HashMap_u64__u128_ asset_indices;\n    struct std_collections_HashMap_u64__u128_ spot_pairs;\n    struct std_collections_HashMap_u64__u128_ spot_volume;\n    struct std_collections_HashMap_u64__u128_ spot_indices;\n    struct std_collections_HashMap_u64__u128_ price_history;\n    struct std_collections_HashMap_u64__u128_ funding_history;\n    struct std_collections_HashMap_u64__u128_ vol_history;\n    struct std_collections_HashMap_u64__u128_ trade_history;\n    struct std_collections_HashMap_u64__u128_ fill_history;\n    struct std_collections_HashMap_u64__u128_ block_history;\n    struct std_collections_HashMap_u64__u128_ clearing_meta;\n    struct std_collections_HashMap_u64__u128_ coin_meta;\n    __uint128_t epoch;\n    __uint128_t block_time;\n    __uint128_t block_height;\n    struct UserState default_user;\n    void* iter_state;\n    struct std_collections_BTreeMap_u64__u128_ recent_funding;\n    struct std_collections_BTreeMap_u64__u128_ recent_premiums;\n    struct std_collections_BTreeMap_UserAddress__u128_ user_summaries;\n    struct std_collections_BTreeMap_UserAddress__u128_ user_perp_summaries;\n    struct std_collections_BTreeMap_UserAddress__u128_ vault_summaries;\n    struct std_collections_BTreeMap_u64__u128_ fill_summaries;\n    struct std_collections_BTreeMap_u64__u128_ trade_summaries;\n    struct std_collections_BTreeMap_UserAddress__UserState_ users;\n    uint8_t _pad_2600[8];\n};",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/a376035d-69bd-4b8d-a5a6-11fac68e1a48.jsonl"
+    },
+    {
+      "name": "compute_margin_requirement_by_mode",
+      "address": "0x555556b61a50",
+      "tool_calls": 22,
+      "iter_count": 11,
+      "elapsed_s": 227.8,
+      "input_tokens": 27,
+      "output_tokens": 13020,
+      "cache_read_tokens": 183387,
+      "cache_create_tokens": 27837,
+      "cost_usd": 0.6097338,
+      "error": "",
+      "transport_error": "",
+      "session_id": "d891884e-3d36-4732-ac26-9d49cbcdcdd5",
+      "submitted_decl": "pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct Position {\n    pub coin_idx: u64,\n    pub user_idx: u64,\n    pub size: i64,\n    pub avg_entry: u64,\n    pub leverage: u64,\n    pub liquidation_px: u64,\n    pub funding_paid: u64,\n    pub realized_pnl: u64,\n    pub fee_paid: u64,\n    pub last_update: u64,\n    pub margin_used: u64,\n    pub upnl: u64,\n    pub maintenance: u64,\n    pub initial_margin: u64,\n    pub reserved: u64,\n    pub kind: u128,\n    pub leverage_setting: u64,\n    pub raw_size: u64,\n    pub is_isolated: bool,\n}\n\npub struct MarginResult {\n    pub status: u64,\n    pub abs_notional_lo: u64,\n    pub abs_notional_hi: u64,\n    pub px_tag: u64,\n    pub px_value: u64,\n    pub mode: u64,\n    pub leverage: u64,\n    pub margin_amount: u64,\n    pub maintenance_margin: u64,\n    pub free_margin_lo: u64,\n    pub free_margin_hi: u64,\n    pub equity: u128,\n    pub upnl: u64,\n    pub funding: u64,\n    pub fee: u64,\n    pub flags: u64,\n}\n\n(position: &Position, oracle: &OraclePx) -> MarginResult",
+      "submitted_types": "pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct Position {\n    pub coin_idx: u64,\n    pub user_idx: u64,\n    pub size: i64,\n    pub avg_entry: u64,\n    pub leverage: u64,\n    pub liquidation_px: u64,\n    pub funding_paid: u64,\n    pub realized_pnl: u64,\n    pub fee_paid: u64,\n    pub last_update: u64,\n    pub margin_used: u64,\n    pub upnl: u64,\n    pub maintenance: u64,\n    pub initial_margin: u64,\n    pub reserved: u64,\n    pub kind: u128,\n    pub leverage_setting: u64,\n    pub raw_size: u64,\n    pub is_isolated: bool,\n}\n\npub struct MarginResult {\n    pub status: u64,\n    pub abs_notional_lo: u64,\n    pub abs_notional_hi: u64,\n    pub px_tag: u64,\n    pub px_value: u64,\n    pub mode: u64,\n    pub leverage: u64,\n    pub margin_amount: u64,\n    pub maintenance_margin: u64,\n    pub free_margin_lo: u64,\n    pub free_margin_hi: u64,\n    pub equity: u128,\n    pub upnl: u64,\n    pub funding: u64,\n    pub fee: u64,\n    pub flags: u64,\n}",
+      "submitted_signature": "(position: &Position, oracle: &OraclePx) -> MarginResult",
+      "confidence": 0.4,
+      "rationale": "Harness says observed 3 reg-args used and sret-shaped return; this matches sret(rdi)+rsi(position)+rdx(oracle), with the mode register elided.",
+      "final_score": 1.0,
+      "final_perfect": true,
+      "submit_attempts": 2,
+      "budget_exhausted": false,
+      "wide_blocks": 0,
+      "wide_unlocked": true,
+      "c_decl": "void f(struct MarginResult* _ret, struct Position* position, struct OraclePx* oracle)",
+      "c_structs": "struct OraclePx {\n    uint64_t source;\n    uint64_t timestamp;\n    uint64_t flags;\n    int64_t price;\n};\n\nstruct Position {\n    __uint128_t kind;\n    uint64_t coin_idx;\n    uint64_t user_idx;\n    int64_t size;\n    uint64_t avg_entry;\n    uint64_t leverage;\n    uint64_t liquidation_px;\n    uint64_t funding_paid;\n    uint64_t realized_pnl;\n    uint64_t fee_paid;\n    uint64_t last_update;\n    uint64_t margin_used;\n    uint64_t upnl;\n    uint64_t maintenance;\n    uint64_t initial_margin;\n    uint64_t reserved;\n    uint64_t leverage_setting;\n    uint64_t raw_size;\n    bool is_isolated;\n    uint8_t _pad_153[7];\n};\n\nstruct MarginResult {\n    __uint128_t equity;\n    uint64_t status;\n    uint64_t abs_notional_lo;\n    uint64_t abs_notional_hi;\n    uint64_t px_tag;\n    uint64_t px_value;\n    uint64_t mode;\n    uint64_t leverage;\n    uint64_t margin_amount;\n    uint64_t maintenance_margin;\n    uint64_t free_margin_lo;\n    uint64_t free_margin_hi;\n    uint64_t upnl;\n    uint64_t funding;\n    uint64_t fee;\n    uint64_t flags;\n    uint8_t _pad_136[8];\n};",
+      "binja_signature": "void(void* result, int64_t position_size, int64_t signed_notional, int32_t margin_mode, int32_t leverage)",
+      "binja_propagation": {
+        "callers": [
+          {
+            "addr": "0x555556ab8c60",
+            "name": "compute_adl_user_requirement"
+          },
+          {
+            "addr": "0x555556abb140",
+            "name": "compute_adl_ranking_score"
+          },
+          {
+            "addr": "0x555556abb140",
+            "name": "compute_adl_ranking_score"
+          },
+          {
+            "addr": "0x555556ac12f0",
+            "name": "sub_555556ac12f0"
+          },
+          {
+            "addr": "0x555556bb4d20",
+            "name": "compute_account_value_for_direction"
+          },
+          {
+            "addr": "0x555556bb4fb0",
+            "name": "compute_user_margin_and_shortfall"
+          },
+          {
+            "addr": "0x555556be18b0",
+            "name": "sub_555556be18b0"
+          }
+        ],
+        "callees": [
+          {
+            "addr": "0x555556c30280",
+            "name": "oracle_price_type_validate"
+          },
+          {
+            "addr": "0x555556b5a850",
+            "name": "option_unit_qty_add_a"
+          },
+          {
+            "addr": "0x5555556c9aa0",
+            "name": "panic_unwrap_err"
+          },
+          {
+            "addr": "0x5555556c9e70",
+            "name": "panic_overflow_mul"
+          },
+          {
+            "addr": "0x5555556c9f70",
+            "name": "panic_division_by_zero"
+          },
+          {
+            "addr": "0x5555556c9df0",
+            "name": "panic_overflow_add"
+          },
+          {
+            "addr": "0x5555556c9e70",
+            "name": "panic_overflow_mul"
+          },
+          {
+            "addr": "0x5555556c9e70",
+            "name": "panic_overflow_mul"
+          }
+        ],
+        "type_refs": {
+          "OraclePx": [],
+          "Position": [],
+          "MarginResult": []
+        }
+      },
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/d891884e-3d36-4732-ac26-9d49cbcdcdd5.jsonl"
+    },
+    {
+      "name": "compute_user_margin_and_shortfall",
+      "address": "0x555556bb4fb0",
+      "tool_calls": 20,
+      "iter_count": 15,
+      "elapsed_s": 276.3,
+      "input_tokens": 25,
+      "output_tokens": 17872,
+      "cache_read_tokens": 358209,
+      "cache_create_tokens": 40041,
+      "cost_usd": 0.8942955,
+      "error": "",
+      "transport_error": "",
+      "session_id": "fe3eeb7f-9dd8-4209-b1e1-4133782cb405",
+      "submitted_decl": "use std::collections::BTreeMap;\n\npub struct UnitQty {\n    pub unit: u64,\n    pub value: u64,\n}\n\npub struct AssetPosition;\n\npub struct UserState {\n    pub account_equity: Option<UnitQty>,\n    pub raw_equity: Option<UnitQty>,\n    pub positions: BTreeMap<u64, AssetPosition>,\n}\n\npub struct OraclePxRef {\n    pub asset: u64,\n    pub px_unit: u64,\n    pub px_value: u64,\n}\n\npub struct UserMarginShortfall {\n    pub total_equity: Option<UnitQty>,\n    pub margin_req: Option<UnitQty>,\n    pub abs_ntl: Option<UnitQty>,\n    pub iso_equity: Option<UnitQty>,\n}\n\n(this: &UserState, mkt: &OraclePxRef) -> UserMarginShortfall",
+      "submitted_types": "use std::collections::BTreeMap;\n\npub struct UnitQty {\n    pub unit: u64,\n    pub value: u64,\n}\n\npub struct AssetPosition;\n\npub struct UserState {\n    pub account_equity: Option<UnitQty>,\n    pub raw_equity: Option<UnitQty>,\n    pub positions: BTreeMap<u64, AssetPosition>,\n}\n\npub struct OraclePxRef {\n    pub asset: u64,\n    pub px_unit: u64,\n    pub px_value: u64,\n}\n\npub struct UserMarginShortfall {\n    pub total_equity: Option<UnitQty>,\n    pub margin_req: Option<UnitQty>,\n    pub abs_ntl: Option<UnitQty>,\n    pub iso_equity: Option<UnitQty>,\n}",
+      "submitted_signature": "(this: &UserState, mkt: &OraclePxRef) -> UserMarginShortfall",
+      "confidence": 0.85,
+      "rationale": "sret return populates 4 Option&lt;UnitQty&gt;-shaped 24B accumulators (total_equity/margin_req/abs_ntl/iso_equity); rsi reads at 0,8,0x10 (account_equity Option), 0x30/0x38/0x40 (BTreeMap&lt;u64,AssetPosition&gt;); rdx reads only at 0x8,0x10 (oracle px ref).",
+      "final_score": 1.0,
+      "final_perfect": true,
+      "submit_attempts": 1,
+      "budget_exhausted": false,
+      "wide_blocks": 2,
+      "wide_unlocked": true,
+      "c_decl": "void f(struct UserMarginShortfall* _ret, struct UserState* this_, struct OraclePxRef* mkt)",
+      "c_structs": "struct OraclePxRef {\n    uint64_t asset;\n    uint64_t px_unit;\n    uint64_t px_value;\n};\n\nstruct std_collections_BTreeMap_u64__AssetPosition_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, AssetPosition, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct UserMarginShortfall {\n    uint8_t /* std::option::Option<UnitQty> */[24] total_equity;\n    uint8_t /* std::option::Option<UnitQty> */[24] margin_req;\n    uint8_t /* std::option::Option<UnitQty> */[24] abs_ntl;\n    uint8_t /* std::option::Option<UnitQty> */[24] iso_equity;\n};\n\nstruct UserState {\n    uint8_t /* std::option::Option<UnitQty> */[24] account_equity;\n    uint8_t /* std::option::Option<UnitQty> */[24] raw_equity;\n    struct std_collections_BTreeMap_u64__AssetPosition_ positions;\n};",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/fe3eeb7f-9dd8-4209-b1e1-4133782cb405.jsonl"
+    },
+    {
+      "name": "compute_adl_ranking_score",
+      "address": "0x555556abb140",
+      "tool_calls": 24,
+      "iter_count": 0,
+      "elapsed_s": 905.7,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_create_tokens": 0,
+      "cost_usd": 0.0,
+      "error": "timeout after 900s",
+      "transport_error": "",
+      "session_id": "",
+      "submitted_decl": "pub struct Clearinghouse { _data: [u64; 2700] }\n\n(this: &Clearinghouse, user_key: &[u32; 4], market_idx: usize)",
+      "submitted_types": "pub struct Clearinghouse { _data: [u64; 2700] }",
+      "submitted_signature": "(this: &Clearinghouse, user_key: &[u32; 4], market_idx: usize)",
+      "confidence": 0.7,
+      "rationale": "rdi=&Clearinghouse (huge state, observed offsets at stride 0xd8 imply [Market; 100]); rsi=&[u32; 4] user key (caller passes &user_key from a uint32_t[4]); rdx=usize market index (used in bounds check against vec.len at +0xe8); no return (register_trace via=none).",
+      "final_score": 0.0,
+      "final_perfect": true,
+      "submit_attempts": 1,
+      "budget_exhausted": false,
+      "wide_blocks": 2,
+      "wide_unlocked": true,
+      "c_decl": "",
+      "c_structs": "",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": ""
+    },
+    {
+      "name": "clearinghouse_adl_orchestrator",
+      "address": "0x555556ac3850",
+      "tool_calls": 28,
+      "iter_count": 23,
+      "elapsed_s": 361.9,
+      "input_tokens": 58,
+      "output_tokens": 23455,
+      "cache_read_tokens": 648790,
+      "cache_create_tokens": 115909,
+      "cost_usd": 1.6450610999999997,
+      "error": "",
+      "transport_error": "",
+      "session_id": "d97d0ac2-9ed3-468d-a6ed-0211bd366afb",
+      "submitted_decl": "use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, AssetState>,\n    pub current_time: u64,\n    pub block_height: u64,\n    pub equity_threshold: u64,\n    pub margin_threshold: u64,\n    pub fees: u64,\n    pub seq: u64,\n    pub user_states: UserStateRegistry,\n    pub n_assets: u64,\n    pub margin_table: Vec<MarginEntry>,\n    pub liq_table: Vec<MarginEntry>,\n    pub adl_table: Vec<MarginEntry>,\n    pub limits: MarginLimits,\n    pub vault_states: BTreeMap<UserAddr, VaultState>,\n    pub adl_enabled: bool,\n    pub triggers: BTreeMap<UserAddr, TriggerState>,\n}\npub struct UserAddr(pub [u8; 20]);\npub struct AssetState { pub bid: u64, pub ask: u64 }\npub struct MarginEntry { pub a: u64, pub b: u64, pub c: u64 }\npub struct UserStateRegistry {\n    pub orderbook: HashMap<u64, AssetState>,\n    pub current_time: u64,\n    pub block_height: u64,\n    pub margin_buffer: u64,\n    pub assets: Vec<u64>,\n    pub funding: Vec<u64>,\n}\npub struct MarginLimits {\n    pub a: u64, pub b: u64, pub c: u64, pub d: u64, pub e: u64,\n    pub f: u64, pub g: u64, pub h: u64, pub i: u64, pub j: u64,\n    pub k: u64, pub l: u64, pub m: u64, pub n: u64, pub o: u64,\n    pub p: u64, pub q: u64, pub r: u64, pub s: u64, pub t: u64,\n    pub u: u64, pub v: u64, pub w: u64, pub x: u64, pub y: u64,\n    pub z: u64,\n}\npub struct VaultState { pub a: u64, pub b: u64 }\npub struct TriggerState { pub flag: u8 }\n\npub struct AssetMeta {\n    pub orderbook: HashMap<u64, OrderRow>,\n    pub px_index: u64,\n    pub mark_price: u64,\n    pub px_decimals: u32,\n    pub _trail: u32,\n    pub trade_history: Vec<u64>,\n}\npub struct OrderRow { pub p: u64, pub q: u64 }\n\npub struct MarketCtx {\n    pub orderbook: BTreeMap<u64, OrderRow>,\n    pub epoch: u64,\n    pub trigger: u64,\n    pub last_update: u64,\n}\n\npub struct AdlCandidate {\n    pub equity: i128,\n    pub shortfall_fn: fn(u64, u64, u32) -> u64,\n}\n\npub struct AdlResult { pub asset_idx: u64, pub side: u8 }\n\n(ch: &Clearinghouse, asset_meta: &AssetMeta, market: &mut MarketCtx, candidates: &AdlCandidate, deferred_only: bool) -> BTreeMap<AdlResult, Vec<u64>>",
+      "submitted_types": "use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, AssetState>,\n    pub current_time: u64,\n    pub block_height: u64,\n    pub equity_threshold: u64,\n    pub margin_threshold: u64,\n    pub fees: u64,\n    pub seq: u64,\n    pub user_states: UserStateRegistry,\n    pub n_assets: u64,\n    pub margin_table: Vec<MarginEntry>,\n    pub liq_table: Vec<MarginEntry>,\n    pub adl_table: Vec<MarginEntry>,\n    pub limits: MarginLimits,\n    pub vault_states: BTreeMap<UserAddr, VaultState>,\n    pub adl_enabled: bool,\n    pub triggers: BTreeMap<UserAddr, TriggerState>,\n}\npub struct UserAddr(pub [u8; 20]);\npub struct AssetState { pub bid: u64, pub ask: u64 }\npub struct MarginEntry { pub a: u64, pub b: u64, pub c: u64 }\npub struct UserStateRegistry {\n    pub orderbook: HashMap<u64, AssetState>,\n    pub current_time: u64,\n    pub block_height: u64,\n    pub margin_buffer: u64,\n    pub assets: Vec<u64>,\n    pub funding: Vec<u64>,\n}\npub struct MarginLimits {\n    pub a: u64, pub b: u64, pub c: u64, pub d: u64, pub e: u64,\n    pub f: u64, pub g: u64, pub h: u64, pub i: u64, pub j: u64,\n    pub k: u64, pub l: u64, pub m: u64, pub n: u64, pub o: u64,\n    pub p: u64, pub q: u64, pub r: u64, pub s: u64, pub t: u64,\n    pub u: u64, pub v: u64, pub w: u64, pub x: u64, pub y: u64,\n    pub z: u64,\n}\npub struct VaultState { pub a: u64, pub b: u64 }\npub struct TriggerState { pub flag: u8 }\n\npub struct AssetMeta {\n    pub orderbook: HashMap<u64, OrderRow>,\n    pub px_index: u64,\n    pub mark_price: u64,\n    pub px_decimals: u32,\n    pub _trail: u32,\n    pub trade_history: Vec<u64>,\n}\npub struct OrderRow { pub p: u64, pub q: u64 }\n\npub struct MarketCtx {\n    pub orderbook: BTreeMap<u64, OrderRow>,\n    pub epoch: u64,\n    pub trigger: u64,\n    pub last_update: u64,\n}\n\npub struct AdlCandidate {\n    pub equity: i128,\n    pub shortfall_fn: fn(u64, u64, u32) -> u64,\n}\n\npub struct AdlResult { pub asset_idx: u64, pub side: u8 }",
+      "submitted_signature": "(ch: &Clearinghouse, asset_meta: &AssetMeta, market: &mut MarketCtx, candidates: &AdlCandidate, deferred_only: bool) -> BTreeMap<AdlResult, Vec<u64>>",
+      "confidence": 0.4,
+      "rationale": "Extended MarketCtx with last_update field to satisfy 0x28 deref. r9 bool optimized away (ARITY-TRAP keep).",
+      "final_score": 0.857,
+      "final_perfect": false,
+      "submit_attempts": 4,
+      "budget_exhausted": false,
+      "wide_blocks": 0,
+      "wide_unlocked": true,
+      "c_decl": "void f(struct std_collections_BTreeMap_AdlResult__std_vec_Vec_u64__* _ret, struct Clearinghouse* ch, struct AssetMeta* asset_meta, struct MarketCtx* market, struct AdlCandidate* candidates, bool deferred_only)",
+      "c_structs": "struct AdlCandidate {\n    __int128_t equity;\n    void* shortfall_fn;\n    uint8_t _pad_24[8];\n};\n\nstruct std_collections_BTreeMap_u64__OrderRow_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, OrderRow, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct alloc_raw_vec_Cap {\n    uintptr_t _0;\n};\n\nstruct std_ptr_NonNull_u8_ {\n    void* pointer;\n};\n\nstruct std_hash_RandomState {\n    uint64_t k0;\n    uint64_t k1;\n};\n\nstruct std_collections_BTreeMap_UserAddr__TriggerState_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, UserAddr, TriggerState, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct std_collections_BTreeMap_UserAddr__VaultState_ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, UserAddr, VaultState, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct MarginLimits {\n    uint64_t a;\n    uint64_t b;\n    uint64_t c;\n    uint64_t d;\n    uint64_t e;\n    uint64_t f;\n    uint64_t g;\n    uint64_t h;\n    uint64_t i;\n    uint64_t j;\n    uint64_t k;\n    uint64_t l;\n    uint64_t m;\n    uint64_t n;\n    uint64_t o;\n    uint64_t p;\n    uint64_t q;\n    uint64_t r;\n    uint64_t s;\n    uint64_t t;\n    uint64_t u;\n    uint64_t v;\n    uint64_t w;\n    uint64_t x;\n    uint64_t y;\n    uint64_t z;\n};\n\nstruct std_collections_BTreeMap_AdlResult__std_vec_Vec_u64__ {\n    uint8_t /* std::option::Option<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, AdlResult, std::vec::Vec<u64>, alloc::collections::btree::node::marker::LeafOrInternal>> */[16] root;\n    uintptr_t length;\n};\n\nstruct MarketCtx {\n    struct std_collections_BTreeMap_u64__OrderRow_ orderbook;\n    uint64_t epoch;\n    uint64_t trigger;\n    uint64_t last_update;\n};\n\nstruct std_ptr_Unique_u8_ {\n    struct std_ptr_NonNull_u8_ pointer;\n};\n\nstruct hashbrown_raw_RawTableInner {\n    struct std_ptr_NonNull_u8_ ctrl;\n    uintptr_t bucket_mask;\n    uintptr_t growth_left;\n    uintptr_t items;\n};\n\nstruct alloc_raw_vec_RawVecInner {\n    struct alloc_raw_vec_Cap cap;\n    struct std_ptr_Unique_u8_ ptr;\n};\n\nstruct hashbrown_raw_RawTable__u64__OrderRow__ {\n    struct hashbrown_raw_RawTableInner table;\n};\n\nstruct hashbrown_raw_RawTable__u64__AssetState__ {\n    struct hashbrown_raw_RawTableInner table;\n};\n\nstruct alloc_raw_vec_RawVec_u64_ {\n    struct alloc_raw_vec_RawVecInner inner;\n};\n\nstruct hashbrown_map_HashMap_u64__OrderRow__std_hash_RandomState_ {\n    struct hashbrown_raw_RawTable__u64__OrderRow__ table;\n    struct std_hash_RandomState hash_builder;\n};\n\nstruct alloc_raw_vec_RawVec_MarginEntry_ {\n    struct alloc_raw_vec_RawVecInner inner;\n};\n\nstruct hashbrown_map_HashMap_u64__AssetState__std_hash_RandomState_ {\n    struct hashbrown_raw_RawTable__u64__AssetState__ table;\n    struct std_hash_RandomState hash_builder;\n};\n\nstruct std_vec_Vec_u64_ {\n    struct alloc_raw_vec_RawVec_u64_ buf;\n    uintptr_t len;\n};\n\nstruct std_collections_HashMap_u64__OrderRow_ {\n    struct hashbrown_map_HashMap_u64__OrderRow__std_hash_RandomState_ base;\n};\n\nstruct std_vec_Vec_MarginEntry_ {\n    struct alloc_raw_vec_RawVec_MarginEntry_ buf;\n    uintptr_t len;\n};\n\nstruct std_collections_HashMap_u64__AssetState_ {\n    struct hashbrown_map_HashMap_u64__AssetState__std_hash_RandomState_ base;\n};\n\nstruct AssetMeta {\n    struct std_vec_Vec_u64_ trade_history;\n    struct std_collections_HashMap_u64__OrderRow_ orderbook;\n    uint64_t px_index;\n    uint64_t mark_price;\n    uint32_t px_decimals;\n    uint32_t _trail;\n};\n\nstruct UserStateRegistry {\n    struct std_vec_Vec_u64_ assets;\n    struct std_vec_Vec_u64_ funding;\n    struct std_collections_HashMap_u64__AssetState_ orderbook;\n    uint64_t current_time;\n    uint64_t block_height;\n    uint64_t margin_buffer;\n};\n\nstruct Clearinghouse {\n    struct UserStateRegistry user_states;\n    struct std_vec_Vec_MarginEntry_ margin_table;\n    struct std_vec_Vec_MarginEntry_ liq_table;\n    struct std_vec_Vec_MarginEntry_ adl_table;\n    struct std_collections_HashMap_u64__AssetState_ assets;\n    uint64_t current_time;\n    uint64_t block_height;\n    uint64_t equity_threshold;\n    uint64_t margin_threshold;\n    uint64_t fees;\n    uint64_t seq;\n    uint64_t n_assets;\n    struct MarginLimits limits;\n    struct std_collections_BTreeMap_UserAddr__VaultState_ vault_states;\n    struct std_collections_BTreeMap_UserAddr__TriggerState_ triggers;\n    bool adl_enabled;\n    uint8_t _pad_553[7];\n};",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": "/home/renny/.claude/projects/-home-renny-doc-work-research-patina-agents/d97d0ac2-9ed3-468d-a6ed-0211bd366afb.jsonl"
+    },
+    {
+      "name": "compute_position_liquidation_check",
+      "address": "0x555556beadd0",
+      "tool_calls": 59,
+      "iter_count": 0,
+      "elapsed_s": 605.4,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_create_tokens": 0,
+      "cost_usd": 0.0,
+      "error": "timeout after 600s",
+      "transport_error": "",
+      "session_id": "",
+      "submitted_decl": "",
+      "submitted_types": "",
+      "submitted_signature": "",
+      "confidence": 0.0,
+      "rationale": "",
+      "final_score": 0.0,
+      "final_perfect": false,
+      "submit_attempts": 0,
+      "budget_exhausted": false,
+      "wide_blocks": 2,
+      "wide_unlocked": false,
+      "c_decl": "",
+      "c_structs": "",
+      "binja_signature": "",
+      "binja_propagation": {},
+      "transcript": ""
+    }
+  ]
+}

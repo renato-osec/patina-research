@@ -1,0 +1,19 @@
+[marinator] 6 targets, workers=2, model=sonnet
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[done ] build_adl_candidate_set  {"renamed_vars": 2, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0}  tools=6 iters=7 $0.304 t=201.7s
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_position_liquidation_check  {"renamed_vars": 12, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0, "prototypes_set": 1}  tools=14 iters=15 $0.373 t=226.1s
+[done ] compute_margin_requirement_by_mode  {"renamed_vars": 13, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0}  tools=13 iters=14 $0.700 t=490.9s
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_user_margin_and_shortfall  {"renamed_vars": 16, "renamed_funcs": 0, "retypes": 0, "comments": 0, "types_declared": 0, "notes": "Batch-renamed 16 variables in compute_user_margin_and_shortfall: pos_copy (0xa0-byte position copy buffer / tag scratch), saved_cross_margin_flag (loop-persistent cross-margin mode flag), mkt_data_field_0x40 (int128 oracle/market-data field at asset*0x60+0x40), and the 12 output-struct slots from compute_margin_requirement_by_mode (marg_out_equity_scalars, marg_out_mreq_opts, marg_out_mreq_scalars, marg_out_abs_ntl_opts, marg_out_abs_ntl_scalars, marg_out_raw_eq_opts, marg_out_raw_eq_scalars, equity_delta_opt_b, mreq_delta_opt_b, abs_ntl_delta_opt_b, raw_eq_delta_opt_b). Function name already correct; accumulator variables (total_equity_*, margin_req_*, abs_ntl_*), BTree traversal vars, and result struct fields were already well-annotated."}  tools=7 iters=8 $0.475 t=275.4s
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  {"renamed_vars": 6, "renamed_funcs": 0, "retypes": 0, "comments": 1, "types_declared": 0}  tools=7 iters=8 $0.492 t=305.5s
+[done ] clearinghouse_adl_orchestrator  ERROR: timeout after 600s  (605.3s)
+[marinator] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/warper/hl-node2.warped.patina.json
+[marinator] faulthandler armed -> outputs/chain_typ_v4/marinator/marinator.fault (fd=10)
+[marinator] analysis drained in 0.1s
+[marinator] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/marinator/hl-node2.warped.marinated.bndb (2.1s)
+[marinator] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/marinator/hl-node2.warped.marinated.patina.json
+[marinator] done in 1371.6s, 0/6 perfect, 0 failed, 88,506 tokens, $2.344, output outputs/chain_typ_v4/marinator/marinator.json
