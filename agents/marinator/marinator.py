@@ -1,11 +1,4 @@
-# Per-function marination harness - uses patina's `Agent` (agent.py) with
-# the binja read tools and the marinator-specific write+submit tool factories.
-#
-# Lessons baked into the SYSTEM prompt come from a manual marination of
-# `exchange_end_block` in hl-node2.bndb (558 blocks, ~150 tool calls): SSA
-# rename quirks, retype-after-declare, prototype parsing rules, the leverage
-# of struct field retypes, recurring shapes (Vec24/OptionUnitQty/BTreeMap24),
-# and the BTree node stride taxonomy of the binary.
+# Per-fn marination harness; binja read tools + marinator write/submit.
 from __future__ import annotations
 
 import os, sys

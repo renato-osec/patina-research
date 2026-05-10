@@ -1,12 +1,4 @@
-# Shared pipeline orchestration. Every per-fn agent (signer, flower,
-# marinator) runs the same skeleton: load bndb -> Recoveries sidecar
-# + TargetCtx -> resolve_targets -> run_targets_gated -> save JSON +
-# sidecar + bndb. The agent-specific bits live in `StageSpec`:
-#   name              short label for logs + filenames
-#   out_bndb_suffix   `.signed.bndb` etc.
-#   run_one           async per-fn body returning the result record
-#   format_done       agent's `[done ]` log line for one record
-#   add_extra_args    optional argparse hook (prelude-file etc.)
+# Shared pipeline orchestration; per-agent specialization via StageSpec.
 from __future__ import annotations
 
 import argparse
@@ -55,15 +47,8 @@ class StageSpec:
     add_extra_args: Callable[[argparse.ArgumentParser], None] | None = None
     description: str = ""
     default_model: str = "opus"
-    # Per-stage default max-turns ceiling. Flower benefits from a
-    # lower cap because opus tends to ramble past the limit and dump
-    # 50k+ output tokens trying to wrap up - that's the SDK's "Command
-    # failed with exit code 1" path.
-    default_max_turns: int = 16
-    # Recoveries-sidecar namespace(s) this stage may write to. Empty
-    # set = read-only access to the sidecar. None = unrestricted (back-
-    # compat). Lower stages (warper / marinator) keep this empty so
-    # they can't clobber the rust memories signer / flower own.
+    default_max_turns: int = 16  # flower lower; opus ramble = sdk exit-1.
+    # Sidecar namespaces this stage may write. Empty = read-only.
     write_namespaces: set[str] = field(default_factory=set)
     extra_run_kwargs: Callable[[argparse.Namespace], dict] = \
         field(default_factory=lambda: (lambda args: {}))
