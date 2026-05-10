@@ -76,6 +76,28 @@ def _is_trivial_body(rust_source: str, rust_fn_name: str,
             f"computation; if any are truly unused, drop them from "
             f"the signature."
         )
+    # Stub-body trap: any `let _ = ...` cheese paired with a too-small
+    # body for the binary's complexity. Catches both the high-density
+    # case (5x let_) and the single-line-cheese case
+    # (`let result = ...; let _ = ch; result` for a 558-BB fn).
+    let_underscore = sum(1 for s in stmts if s.startswith("let _ ="))
+    if let_underscore >= 1 and bin_block_count > 30 and len(stmts) < 5:
+        return True, (
+            f"submission rejected: body has only {len(stmts)} statement(s) "
+            f"with {let_underscore} `let _ = ...` discard(s) but the binary "
+            f"has {bin_block_count} basic blocks. That's a stub - args "
+            f"mentioned but never flowed. Use the signer-recovered struct "
+            f"fields in real computation; one match arm or field read on "
+            f"a real path beats `let _ = ...` discards."
+        )
+    if (let_underscore >= 3
+            and let_underscore >= len(stmts) // 2
+            and bin_block_count > 8):
+        return True, (
+            f"submission rejected: {let_underscore}/{len(stmts)} "
+            f"statements are `let _ = ...`. The body is binding "
+            f"theater - args mentioned but never flowed."
+        )
     return False, ""
 
 
