@@ -174,12 +174,29 @@ def format_context_dir(path: str | None) -> str:
     p = _P(path).expanduser()
     if not p.is_dir():
         return ""
+    notes_path = p / "_agent_notes.md"
     return (
-        f"\n\nProject context dir: `{p}`. Heterogeneous material "
-        "(source, notes, dumps). When a binary symbol, shape, or "
-        "string suggests something domain-specific, peer into it - "
-        "Bash `ls`, then Grep/Read targeted slices. Don't read in "
-        "bulk; let the leads pull you in.\n"
+        f"\n\n=== Project context dir: `{p}` ===\n"
+        "**CONSULT THIS FIRST.** Before drafting any type or signature, "
+        f"do `Bash ls {p}` and `Read {notes_path}` (if it exists). The "
+        "dir holds source/notes/runtime dumps from the real project - "
+        "field names there are GROUND TRUTH and override anything you "
+        "would infer from binary offsets alone.\n\n"
+        "Workflow:\n"
+        f"  1. `Bash ls {p}` to map subdirs (state/, dumps/, source/, ...).\n"
+        f"  2. `Read {notes_path}` for prior agents' verified findings.\n"
+        "  3. When you suspect a struct shape from HLIL offsets, "
+        "Grep the context dir for matching strings/symbols and Read "
+        "the hit files before naming fields. JSON dumps in state/ or "
+        "dumps/ often give you the canonical field set verbatim.\n"
+        "  4. When you VERIFY something that contradicts a naive "
+        f"binary-only inference, append a one-line note to "
+        f"`{notes_path}`:\n"
+        f"     `Bash: echo '- <fn or struct>: <breakthrough>' >> {notes_path}`\n"
+        f"     e.g. `- Exchange: 18 top-level fields per state/clearinghouse_full.json, NOT 100+`.\n"
+        "  ONLY the most important breakthroughs - skip routine "
+        "confirmations. The notes accumulate across runs so future "
+        "agents inherit your verified findings.\n=== end context ===\n"
     )
 
 
