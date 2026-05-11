@@ -340,6 +340,14 @@ def check(
     #    `_x` is treated as a dodge - the agent renamed `x` to `_x` to
     #    skip a binding check. Bind it as `x` and surface a dodge warning.
     il_vars = {_unversioned(v) for v in anem.variables() if not v.startswith("<")}
+    # Signer's recovered param names (e.g. `this`, `mkt`) are first-class
+    # HLIL aliases for arg1/arg2/... - bind them implicitly so the
+    # agent can use signer's chosen names without tripping the
+    # "rename to HLIL var" rejection.
+    if signer_sig:
+        import re as _resig
+        for _pm in _resig.finditer(r"(\b[a-z_][a-zA-Z0-9_]*)\s*:", signer_sig):
+            il_vars.add(_pm.group(1))
     rust_vars = list(rust_g.variables())
     unbound: list[str] = []
     mapping: dict[str, str] = {}
