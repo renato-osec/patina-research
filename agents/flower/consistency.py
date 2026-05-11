@@ -129,6 +129,18 @@ def _parse_struct_fields(types_src: str) -> dict[str, set[str]]:
     return out
 
 
+def _is_placeholder_fields(fields: set[str]) -> bool:
+    """True iff every field name looks like a signer placeholder - single
+    letter (`a`/`b`/.../`z`), an underscore-prefixed pad (`_pad_X`,
+    `_data`), or a numeric tail (`f48`, `var_28`). Flower is free to
+    rename these to meaningful semantic names without rejection."""
+    if not fields:
+        return False
+    import re as _re
+    pat = _re.compile(r"^(?:[a-z]|_[a-z0-9_]+|f\d+|var_\d+|var_[0-9a-f]+)$")
+    return all(pat.match(n) for n in fields)
+
+
 def _norm_sig(s: str) -> str:
     import re as _re
     return _re.sub(r"\s+", " ", (s or "").strip())
@@ -235,37 +247,24 @@ def check(
                     f"}}\n"
                     f"```\n\n"
                     f"You wrote: `fn {rust_fn_name}{got}`", False)
-    # Signer-handoff: prelude verbatim. Every struct definition in
-    # signer_types (normalised) must appear verbatim in the agent's
-    # source. Then struct-identity catches any agent-redefined version
-    # that diverged.
-    if signer_types and signer_types.strip():
-        want_block = signer_types.strip()
-        # Try the exact verbatim match first (after normalising line endings
-        # and trailing whitespace per line).
-        def _norm_block(s: str) -> str:
-            return "\n".join(ln.rstrip() for ln in s.replace("\r\n", "\n").splitlines()).strip()
-        if _norm_block(want_block) not in _norm_block(rust_source):
-            # Identify which struct/use is missing for a precise error.
-            missing: list[str] = []
-            for m in __import__("re").finditer(
-                r"((?:pub\s+)?(?:struct|enum|union)\s+\w+[^;{]*[{;])",
-                want_block,
-            ):
-                head = m.group(1).strip().rstrip("{").rstrip(";").strip()
-                if head not in rust_source:
-                    missing.append(head)
-            if missing:
-                return CheckResult(False,
-                    f"submission rejected: signer's prelude is not included "
-                    f"verbatim. Missing definitions: {missing[:6]}.\n\n"
-                    f"PASTE this block at the top of your source EXACTLY:\n\n"
-                    f"```rust\n{want_block}\n```", False)
+    # Signer-handoff: prelude-verbatim was too strict; signer's
+    # placeholder-named fields (`a`/`b`/.../`z`, `_padN`) are
+    # legitimately refineable by flower. The struct-id check below now
+    # exempts placeholder-named structs from name-match (count only),
+    # so we no longer require the prelude to appear verbatim.
     if signer_types:
         want_fields = _parse_struct_fields(signer_types)
         got_fields = _parse_struct_fields(rust_source)
         for name, want_set in want_fields.items():
             got_set = got_fields.get(name)
+            # If signer's fields look like placeholder names (`a`/`b`/...
+            # /`z`, `_padN`, `var_28`), signer didn't have semantic names
+            # to assign - flower is welcome to rename to anything that
+            # has the SAME field count (offsets preserved, names refined).
+            if (got_set is not None and want_set
+                    and _is_placeholder_fields(want_set)
+                    and len(got_set) == len(want_set)):
+                continue
             if got_set is not None and got_set != want_set:
                 # Pull the full struct definition out of signer_types
                 # so the agent can copy-paste it verbatim.

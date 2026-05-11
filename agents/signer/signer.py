@@ -141,7 +141,7 @@ def transcript_path(rec: "SignerResult", cwd: str | None = None) -> Path | None:
     return _transcript_path_for_id(rec.session_id, cwd)
 
 
-PER_FN_TIMEOUT_S = per_fn_timeout(default_s=300)
+PER_FN_TIMEOUT_S = per_fn_timeout(default_s=900)  # 900s base; BB-scaled to 1350/1800/2700s
 
 
 async def sign_function(
