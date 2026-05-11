@@ -1,0 +1,19 @@
+[flower] 6 targets, workers=12, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_margin_requirement_by_mode  [OK]  source='pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=22 iters=23 $1.521 t=246.5s  cov=3/33 regions=1
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_position_liquidation_check  [OK]  source='#![allow(dead_code)]\n\npub struct AssetInfo {\n    asset_info_extra: [u8; 0x20],\n    oracle_entries_ptr: Vec<OracleEntry>,'  final_score=1.00  perfect=True  exhausted=True  submits=5  tools=26 iters=27 $1.586 t=273.7s  cov=0/23 regions=0
+[done ] build_adl_candidate_set  [OK]  source='use std::collections::{BTreeMap, BTreeSet, HashMap};\n\npub struct UserAddress(pub [u8; 20]);\n\npub struct PositionState {\n'  final_score=0.99  perfect=True  exhausted=False  submits=2  tools=23 iters=24 $1.698 t=338.0s  cov=0/96 regions=0
+[done ] compute_user_margin_and_shortfall  [OK]  source='use std::collections::BTreeMap;\n\npub struct UnitQty {\n    pub unit: u64,\n    pub value: u64,\n}\n\npub struct AssetPosition'  final_score=0.98  perfect=True  exhausted=False  submits=2  tools=23 iters=24 $1.472 t=236.6s  cov=0/44 regions=0
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [OK]  source='pub struct Clearinghouse { _data: [u64; 2700] }\n\nfn market_oracle_flags(c: &Clearinghouse, m: usize) -> i64 { unimplemen'  final_score=0.99  perfect=True  exhausted=False  submits=2  tools=26 iters=27 $1.810 t=244.8s  cov=0/67 regions=0
+[done ] clearinghouse_adl_orchestrator  [OK]  source='use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, '  final_score=0.98  perfect=True  exhausted=False  submits=3  tools=19 iters=20 $1.382 t=287.9s  cov=3/610 regions=1
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v14_param_alias/flower.fault (fd=10)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v14_param_alias/hl-node2.warped.marinated.signed.flowered.bndb (2.5s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v14_param_alias/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 901.0s, 6/6 perfect, 0 failed, 148,823 tokens, $9.469, output outputs/chain_typ_v14_param_alias/flower.json

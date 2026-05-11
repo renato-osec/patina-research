@@ -1,6 +1,6 @@
 # hl-node2 eval index
 
-_7 archived run(s)_
+_8 archived run(s)_
 
 | run | signer perfect | flower perfect | $ | EVAL |
 |---|---|---|---:|:-:|
@@ -11,3 +11,4 @@ _7 archived run(s)_
 | 2026-05-10T2341-typ-v10b-skeleton-ctx | 0/0 (0.00) | 2/6 (10.64) | 10.64 | yes |
 | 2026-05-11T0036-typ-v12-parallel-12w | 0/0 (0.00) | 2/6 (12.06) | 12.06 | yes |
 | 2026-05-11T0124-typ-v13-placeholder-exempt | 0/0 (0.00) | 2/6 (11.16) | 11.16 | - |
+| 2026-05-11T0152-typ-v14-CLEAN-6of6 | 0/0 (0.00) | 6/6 (9.47) | 9.47 | - |
