@@ -43,6 +43,11 @@ class Agent:
     # to 50k+ output tokens after hitting max_turns crashed the SDK
     # CLI subprocess). 0 = unset.
     task_budget_tokens: int = 0
+    # Extended-thinking effort. "high" gives the model a generous
+    # reasoning budget per turn - worth it for big-fn reconstruction.
+    # Set to None to defer to SDK default; "low"/"medium"/"high" to
+    # override. Read from PATINA_EFFORT env if set, else "high".
+    effort: str | None = None
 
     def _build_options(self, **overrides) -> ClaudeAgentOptions:
         mcp_servers = {}
@@ -57,6 +62,10 @@ class Agent:
         task_budget = {"total": int(budget)} if budget else None
         stderr_buf = overrides.pop("stderr_buf", self.stderr_buf)
         stderr_cb = (lambda s: stderr_buf.append(s)) if stderr_buf is not None else None
+        import os as _os
+        effort = overrides.pop("effort", self.effort)
+        if effort is None:
+            effort = _os.environ.get("PATINA_EFFORT", "high") or None
         return ClaudeAgentOptions(
             system_prompt=self.system_prompt,
             allowed_tools=allowed,
@@ -71,6 +80,7 @@ class Agent:
             agents=self.agents or None,
             task_budget=task_budget,
             stderr=stderr_cb,
+            effort=effort,
             **overrides,
         )
 
