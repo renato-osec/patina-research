@@ -55,40 +55,30 @@ def _is_trivial_body(rust_source: str, rust_fn_name: str,
             f"{bin_block_count} basic blocks. Reconstruct the actual "
             f"logic."
         )
-    # Multi-arg `let _ = (X, Y, ...)` cheeses binding-check: counts as
-    # used, dataflow sees no flow. Reject tuples >=2 idents.
-    multi_underscore_re = re.compile(
-        r"let\s+_\s*(?::\s*[^=]+)?=\s*\(\s*([A-Za-z_][\w]*\s*"
-        r"(?:,\s*[A-Za-z_][\w]*\s*){1,})\)\s*"
-    )
-    bad_tuples: list[str] = []
-    for m in multi_underscore_re.finditer(body):
-        idents = [s.strip() for s in m.group(1).split(",") if s.strip()]
-        if len(idents) >= 2:
-            bad_tuples.append("(" + ", ".join(idents) + ")")
-    if bad_tuples and bin_block_count > 4:
-        return True, (
-            f"submission rejected: {len(bad_tuples)} multi-arg "
-            f"`let _ = (X, Y, ...)` discard(s) detected: "
-            f"{'; '.join(bad_tuples[:3])}. That binds the HLIL var "
-            f"names without using them - dataflow trivially passes "
-            f"because nothing flows. Use those vars in real "
-            f"computation; if any are truly unused, drop them from "
-            f"the signature."
-        )
+    # Multi-arg `let _ = (X, Y, ...)` previously rejected wholesale.
+    # Now allowed as a legitimate "ignore these args" idiom - the
+    # binding check still requires the inner names to be real HLIL
+    # vars, so the agent can't sneak made-up names through this
+    # path. The empty-body and stub-trap checks below still bounce
+    # bodies that are NOTHING but discards.
     # Stub-body trap: any `let _ = ...` cheese paired with a too-small
     # body for the binary's complexity. Catches both the high-density
     # case (5x let_) and the single-line-cheese case
     # (`let result = ...; let _ = ch; result` for a 558-BB fn).
     let_underscore = sum(1 for s in stmts if s.startswith("let _ ="))
-    if let_underscore >= 1 and bin_block_count > 30 and len(stmts) < 5:
+    non_discard = len(stmts) - let_underscore
+    # Stub-trap fires only when discards dominate AND the binary is
+    # substantial. A body of `let _ = (a, b); let r = a+b; r` is fine
+    # (1 discard + 2 real stmts on 100 BBs) - we only flag when there
+    # are <2 non-discard statements for a >30-BB fn.
+    if let_underscore >= 1 and bin_block_count > 30 and non_discard < 2:
         return True, (
-            f"submission rejected: body has only {len(stmts)} statement(s) "
-            f"with {let_underscore} `let _ = ...` discard(s) but the binary "
-            f"has {bin_block_count} basic blocks. That's a stub - args "
-            f"mentioned but never flowed. Use the signer-recovered struct "
-            f"fields in real computation; one match arm or field read on "
-            f"a real path beats `let _ = ...` discards."
+            f"submission rejected: body has only {non_discard} non-discard "
+            f"statement(s) (vs {let_underscore} `let _ = ...` discards) but "
+            f"the binary has {bin_block_count} basic blocks. That's a stub - "
+            f"args mentioned but never flowed. Use the signer-recovered "
+            f"struct fields in real computation; one match arm or field "
+            f"read on a real path beats `let _ = ...` discards."
         )
     if (let_underscore >= 3
             and let_underscore >= len(stmts) // 2
@@ -245,11 +235,32 @@ def check(
                     f"}}\n"
                     f"```\n\n"
                     f"You wrote: `fn {rust_fn_name}{got}`", False)
-    # Signer-handoff: struct identity. Any struct named in signer's
-    # types must NOT be redefined in flower's source with a different
-    # field set. The agent should include signer's types verbatim in
-    # the prelude (or omit them and import); inventing a new
-    # `pub struct Foo { ... }` with different fields is rejected.
+    # Signer-handoff: prelude verbatim. Every struct definition in
+    # signer_types (normalised) must appear verbatim in the agent's
+    # source. Then struct-identity catches any agent-redefined version
+    # that diverged.
+    if signer_types and signer_types.strip():
+        want_block = signer_types.strip()
+        # Try the exact verbatim match first (after normalising line endings
+        # and trailing whitespace per line).
+        def _norm_block(s: str) -> str:
+            return "\n".join(ln.rstrip() for ln in s.replace("\r\n", "\n").splitlines()).strip()
+        if _norm_block(want_block) not in _norm_block(rust_source):
+            # Identify which struct/use is missing for a precise error.
+            missing: list[str] = []
+            for m in __import__("re").finditer(
+                r"((?:pub\s+)?(?:struct|enum|union)\s+\w+[^;{]*[{;])",
+                want_block,
+            ):
+                head = m.group(1).strip().rstrip("{").rstrip(";").strip()
+                if head not in rust_source:
+                    missing.append(head)
+            if missing:
+                return CheckResult(False,
+                    f"submission rejected: signer's prelude is not included "
+                    f"verbatim. Missing definitions: {missing[:6]}.\n\n"
+                    f"PASTE this block at the top of your source EXACTLY:\n\n"
+                    f"```rust\n{want_block}\n```", False)
     if signer_types:
         want_fields = _parse_struct_fields(signer_types)
         got_fields = _parse_struct_fields(rust_source)
