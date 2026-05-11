@@ -1,0 +1,21 @@
+[flower] 6 targets, workers=12, model=opus
+[start] build_adl_candidate_set @ 0x555556266b10
+[start] compute_margin_requirement_by_mode @ 0x555556b61a50
+[start] compute_position_liquidation_check @ 0x555556beadd0
+[done ] compute_margin_requirement_by_mode  [OK]  source='pub struct OraclePx {\n    pub source: u64,\n    pub timestamp: u64,\n    pub flags: u64,\n    pub price: i64,\n}\n\npub struct'  final_score=1.00  perfect=True  exhausted=False  submits=2  tools=18 iters=19 $1.251 t=315.0s  cov=8/33 regions=1
+[start] compute_user_margin_and_shortfall @ 0x555556bb4fb0
+[done ] compute_position_liquidation_check  [OK]  source='#[repr(C)]\npub struct LiqMarginResult { pub _q0: u64, pub _q1: u64, pub _q2: u64 }\n\n#[repr(C)]\npub struct OracleState { '  final_score=1.00  perfect=True  exhausted=True  submits=4  tools=31 iters=32 $2.007 t=423.8s  cov=0/23 regions=0
+[done ] build_adl_candidate_set  [FAILED]  source='use std::collections::{BTreeMap, BTreeSet, HashMap};\n\n#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\npub s'  final_score=0.99  perfect=False  exhausted=True  submits=5  tools=33 iters=34 $2.249 t=379.0s  cov=0/96 regions=0
+[done ] compute_user_margin_and_shortfall  [imperfect]  source='use std::collections::BTreeMap;\n\npub struct UnitQty {\n    pub unit: u64,\n    pub value: u64,\n}\n\npub struct AssetPosition'  final_score=0.99  perfect=False  exhausted=False  submits=4  tools=29 iters=25 $2.391 t=379.5s  cov=0/44 regions=0
+        warning (post-stream): sdk: Exception: Command failed with exit code 1 (exit code: 1)
+Error output: Check stderr output for details
+[start] compute_adl_ranking_score @ 0x555556abb140
+[start] clearinghouse_adl_orchestrator @ 0x555556ac3850
+[done ] compute_adl_ranking_score  [FAILED]  source='pub struct Clearinghouse { _data: [u64; 2700] }\n\nfn market_lookup(ch: &Clearinghouse, idx: usize, oracle_out: &mut [u64;'  final_score=0.99  perfect=False  exhausted=True  submits=5  tools=26 iters=27 $1.920 t=402.9s  cov=0/67 regions=0
+[done ] clearinghouse_adl_orchestrator  [FAILED]  source='use std::collections::BTreeMap;\nuse std::collections::HashMap;\n\npub struct Clearinghouse {\n    pub assets: HashMap<u64, '  final_score=1.00  perfect=False  exhausted=True  submits=5  tools=24 iters=25 $2.241 t=396.6s  cov=0/610 regions=0
+[flower] sidecar -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v4/signer/hl-node2.warped.marinated.signed.patina.json
+[flower] faulthandler armed -> outputs/chain_typ_v12_parallel/flower.fault (fd=10)
+[flower] analysis drained in 0.1s
+[flower] saved -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v12_parallel/hl-node2.warped.marinated.signed.flowered.bndb (3.0s)
+[flower] sidecar mirrored -> /home/renny/doc/work/research/patina/agents/outputs/chain_typ_v12_parallel/hl-node2.warped.marinated.signed.flowered.patina.json
+[flower] done in 1349.2s, 2/6 perfect, 3 failed, 238,447 tokens, $12.059, output outputs/chain_typ_v12_parallel/flower.json
